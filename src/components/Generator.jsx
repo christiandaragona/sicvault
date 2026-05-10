@@ -55,10 +55,39 @@ export default function Generator({ onSaveToVault }) {
     setTimeout(() => setCopied(false), 1500)
   }
 
-  function handleAiDetect() {
+  const [aiNotes, setAiNotes] = useState('')
+  const [aiError, setAiError] = useState('')
+
+  async function handleAiDetect() {
     if (!aiSite.trim()) return
     setAiLoading(true)
-    setTimeout(() => setAiLoading(false), 1800)
+    setAiNotes('')
+    setAiError('')
+    try {
+      const res = await fetch('/api/detect-site', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ site: aiSite.trim() }),
+      })
+      const data = await res.json()
+      if (data.error) throw new Error(data.error)
+      const p = data.policy
+      setOpts(o => ({
+        ...o,
+        length: String(Math.min(Math.max(p.minLength ?? 12, 12), p.maxLength ?? 128)),
+        upper:   p.upper   ?? true,
+        lower:   p.lower   ?? true,
+        numbers: p.numbers ?? true,
+        symbols: p.symbols ?? true,
+        customSymbols: p.allowedSymbols ?? o.customSymbols,
+        excludeAmbiguous: p.excludeAmbiguous ?? false,
+      }))
+      setAiNotes(p.notes ?? '')
+    } catch (e) {
+      setAiError(e.message)
+    } finally {
+      setAiLoading(false)
+    }
   }
 
   const strengthColor =
@@ -97,9 +126,21 @@ export default function Generator({ onSaveToVault }) {
                     {aiLoading ? '...' : '⚡ DETECT'}
                   </button>
                 </div>
-                <div style={{ marginTop: 10, fontSize: 8, letterSpacing: 1.5, color: 'var(--text-dim)' }}>
-                  AUTO-CONFIGURES GENERATOR TO MATCH SITE REQUIREMENTS
-                </div>
+                {aiNotes && (
+                  <div style={{ marginTop: 8, fontSize: 8, letterSpacing: 1.2, color: 'var(--accent-2)', lineHeight: 1.7 }}>
+                    ✓ {aiNotes.toUpperCase()}
+                  </div>
+                )}
+                {aiError && (
+                  <div style={{ marginTop: 8, fontSize: 8, letterSpacing: 1.2, color: 'var(--danger)' }}>
+                    ⚠ {aiError.toUpperCase()}
+                  </div>
+                )}
+                {!aiNotes && !aiError && (
+                  <div style={{ marginTop: 10, fontSize: 8, letterSpacing: 1.5, color: 'var(--text-dim)' }}>
+                    AUTO-CONFIGURES GENERATOR TO MATCH SITE REQUIREMENTS
+                  </div>
+                )}
               </div>
             </div>
           </div>

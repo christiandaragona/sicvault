@@ -219,6 +219,12 @@
   background: var(--bg-4);
   box-shadow: var(--glow-border-hover);
   text-shadow: var(--glow-text);
+  animation: btnPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes btnPulse {
+  0%, 100% { box-shadow: var(--glow-border-hover); }
+  50%       { box-shadow: 0 0 28px var(--glow), 0 0 60px var(--glow-dim); }
 }
 
 .btn-danger {
@@ -268,6 +274,12 @@
 .input:focus {
   border-color: var(--border-bright);
   box-shadow: var(--glow-border);
+  animation: inputPulse 2s ease-in-out infinite;
+}
+
+@keyframes inputPulse {
+  0%, 100% { box-shadow: var(--glow-border); }
+  50%       { box-shadow: var(--glow-border-hover); }
 }
 
 .input::placeholder {
@@ -352,6 +364,23 @@
 @keyframes cardIn {
   from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+
+/* scan sweep on login card */
+.login-card > *:first-child::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(144,169,85,0.04), transparent);
+  animation: scanSweep 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes scanSweep {
+  0%   { left: -60%; }
+  100% { left: 120%; }
 }
 
 /* corner decorations */
