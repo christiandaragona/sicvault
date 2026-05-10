@@ -1102,7 +1102,8 @@
     display: flex;
     position: fixed;
     bottom: 0; left: 0; right: 0;
-    height: 60px;
+    height: calc(60px + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
     background: var(--bg-1);
     border-top: 1px solid var(--border-bright);
     box-shadow: 0 -4px 20px var(--glow-dim);
@@ -1143,16 +1144,17 @@
     width: 100%;
   }
 
-  /* Content area — add bottom padding for nav bar */
+  /* Content area — clear bottom nav + home indicator */
   .content-area {
-    padding: 16px 14px 80px;
+    padding: 16px 14px calc(80px + env(safe-area-inset-bottom));
   }
 
-  /* Topbar */
+  /* Topbar — push below Dynamic Island */
   .topbar {
     padding: 0 14px;
-    height: 48px;
-    min-height: 48px;
+    padding-top: env(safe-area-inset-top);
+    height: calc(48px + env(safe-area-inset-top));
+    min-height: calc(48px + env(safe-area-inset-top));
   }
 
   .topbar-title {
@@ -1235,13 +1237,15 @@
     padding: 20px 16px 80px;
   }
 
-  /* Login screen — allow scroll on small phones */
+  /* Login screen — centered, safe area aware */
   .login-screen {
-    align-items: flex-start;
-    padding: 40px 0 24px;
-    overflow-y: auto;
+    align-items: center;
+    justify-content: center;
+    min-height: 100dvh;
     height: auto;
-    min-height: 100vh;
+    padding: max(env(safe-area-inset-top), 24px) 16px max(env(safe-area-inset-bottom), 24px);
+    box-sizing: border-box;
+    overflow-y: auto;
   }
 
   /* Settings panels */
