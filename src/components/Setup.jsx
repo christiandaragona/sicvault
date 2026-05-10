@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { generateSalt, deriveKey, encryptVault, saveVaultToStorage } from '../lib/crypto'
+import { generateSalt, deriveKey, encryptVault, saveVaultToStorage, saveUsername } from '../lib/crypto'
 import { generateTOTPSecret, verifyTOTP, getTOTPUri } from '../lib/totp'
 
 export default function Setup({ onComplete, theme, onToggleTheme }) {
   const [step, setStep]         = useState('password') // 'password' | 'totp' | 'working'
+  const [username, setUsername] = useState('')
   const [pw, setPw]             = useState('')
   const [confirm, setConfirm]   = useState('')
   const [showPw, setShowPw]     = useState(false)
@@ -15,6 +16,7 @@ export default function Setup({ onComplete, theme, onToggleTheme }) {
 
   async function handlePasswordNext() {
     setError('')
+    if (username.trim().length < 2) return setError('USERNAME MUST BE AT LEAST 2 CHARACTERS')
     if (pw.length < 8) return setError('MASTER PASSWORD MUST BE AT LEAST 8 CHARACTERS')
     if (pw !== confirm) return setError('PASSWORDS DO NOT MATCH')
     if (enable2fa) { setStep('totp'); return }
@@ -39,6 +41,7 @@ export default function Setup({ onComplete, theme, onToggleTheme }) {
       }
       const { iv, ciphertext } = await encryptVault(key, initialVault)
       saveVaultToStorage(salt, iv, ciphertext)
+      saveUsername(username.trim())
       onComplete(key, initialVault)
     } catch (e) {
       setError('SETUP FAILED — ' + e.message)
@@ -68,6 +71,17 @@ export default function Setup({ onComplete, theme, onToggleTheme }) {
 
         {step === 'password' && (
           <>
+            <div className="form-group">
+              <label className="form-label">USERNAME</label>
+              <div className="input-wrapper">
+                <input className="input" type="text"
+                  placeholder="choose a username..."
+                  autoComplete="username"
+                  value={username} onChange={e => setUsername(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handlePasswordNext()} />
+              </div>
+            </div>
+
             <div className="form-group">
               <label className="form-label">MASTER PASSWORD</label>
               <div className="input-wrapper">

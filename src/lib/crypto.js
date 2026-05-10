@@ -71,6 +71,15 @@ export function vaultExists() {
   return !!localStorage.getItem('sicvault_v1')
 }
 
+export function saveUsername(username) {
+  localStorage.setItem('sicvault_username', username)
+}
+
+export function loadUsername() {
+  return localStorage.getItem('sicvault_username') || ''
+}
+
 export function nukeVault() {
   localStorage.removeItem('sicvault_v1')
+  localStorage.removeItem('sicvault_username')
 }

@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { deriveKey, decryptVault, loadVaultFromStorage } from '../lib/crypto'
+import { deriveKey, decryptVault, loadVaultFromStorage, loadUsername } from '../lib/crypto'
 import { verifyTOTP } from '../lib/totp'
 
 export default function Login({ onLogin, theme, onToggleTheme }) {
+  const [username, setUsername]   = useState('')
   const [pw, setPw]               = useState('')
   const [token, setToken]         = useState('')
   const [showPw, setShowPw]       = useState(false)
@@ -12,6 +13,9 @@ export default function Login({ onLogin, theme, onToggleTheme }) {
 
   async function handleAuth() {
     setError('')
+    const storedUser = loadUsername()
+    if (storedUser && username.trim().toLowerCase() !== storedUser.toLowerCase())
+      return setError('INCORRECT USERNAME')
     if (!pw) return setError('ENTER YOUR MASTER PASSWORD')
     setWorking(true)
     try {
@@ -59,6 +63,17 @@ export default function Login({ onLogin, theme, onToggleTheme }) {
           <span style={{ display: 'block', fontSize: 9, letterSpacing: 5, color: 'var(--text-dim)', marginTop: 4 }}>v1.0</span>
           <div className="login-divider" />
           <span className="login-subtitle">SECURE VAULT SYSTEM</span>
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">USERNAME</label>
+          <div className="input-wrapper">
+            <input className="input" type="text"
+              placeholder="enter username..."
+              autoComplete="username"
+              value={username} onChange={e => setUsername(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleAuth()} />
+          </div>
         </div>
 
         <div className="form-group">
