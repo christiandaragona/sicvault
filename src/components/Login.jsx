@@ -25,7 +25,7 @@ export default function Login({ onLogin, onAdminLogin, onBack, theme, onToggleTh
 
       if (acct.error === 'NO ACCOUNT FOUND FOR THIS USERNAME') {
         // Could be admin — try admin auth
-        const adminResult = await adminLogin(username.trim(), pw)
+        const adminResult = await adminLogin(username.trim(), pw, token)
         if (adminResult.token) {
           onAdminLogin(adminResult.token)
           return

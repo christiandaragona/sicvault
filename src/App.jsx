@@ -9,6 +9,7 @@ import Admin from './components/Admin'
 import Sidebar from './components/Sidebar'
 import Vault from './components/Vault'
 import Generator from './components/Generator'
+import Settings from './components/Settings'
 import { encryptVault, saveVaultToStorage, loadVaultFromStorage } from './lib/crypto'
 import { verifyResetToken, getAlert } from './lib/api'
 
@@ -188,7 +189,7 @@ export default function App() {
       <div className="main-content">
         <div className="topbar">
           <span className="topbar-title">
-            {view === 'vault' ? '// CREDENTIAL VAULT' : '// PASSWORD GENERATOR'}
+            {view === 'vault' ? '// CREDENTIAL VAULT' : view === 'generator' ? '// PASSWORD GENERATOR' : '// SETTINGS'}
           </span>
           <div className="topbar-right">
             <div className="twofa-badge">
@@ -225,6 +226,17 @@ export default function App() {
             />
           )}
           {view === 'generator' && <Generator />}
+          {view === 'settings' && (
+            <Settings
+              username={username}
+              vault={vault}
+              vaultKey={vaultKey}
+              onVaultUpdate={(updated, newKey) => {
+                setVault(updated)
+                if (newKey) setVaultKey(newKey)
+              }}
+            />
+          )}
         </div>
       </div>
     </div>

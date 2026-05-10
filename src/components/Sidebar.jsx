@@ -2,6 +2,7 @@ export default function Sidebar({ view, setView, onLock }) {
   const navItems = [
     { id: 'vault',     icon: '🔒', label: 'VAULT' },
     { id: 'generator', icon: '⚡', label: 'GENERATOR' },
+    { id: 'settings',  icon: '⚙', label: 'SETTINGS' },
   ]
 
   return (
