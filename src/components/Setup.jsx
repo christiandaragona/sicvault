@@ -25,6 +25,7 @@ export default function Setup({ onComplete, onBack, theme, onToggleTheme }) {
     if (vaultExistsForUser(username))  return setError('USERNAME ALREADY TAKEN ON THIS DEVICE')
     if (pw.length < 8)                 return setError('MASTER PASSWORD MUST BE AT LEAST 8 CHARACTERS')
     if (pw !== confirm)                return setError('PASSWORDS DO NOT MATCH')
+    if (!enableTotp && !enableEmailTwoFa) return setError('YOU MUST ENABLE AT LEAST ONE 2FA METHOD')
     if (enableTotp) { setStep('totp'); return }
     await createVault(null)
   }
@@ -123,17 +124,22 @@ export default function Setup({ onComplete, onBack, theme, onToggleTheme }) {
               </div>
             </div>
 
-            <div style={{ marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <button className={`toggle-btn ${enableTotp ? 'active' : ''}`}
-                style={{ width: '100%' }} onClick={() => setEnableTotp(v => !v)}>
-                <span className={`toggle-dot ${enableTotp ? 'on' : ''}`} />
-                TOTP 2FA (GOOGLE AUTHENTICATOR / AUTHY)
-              </button>
-              <button className={`toggle-btn ${enableEmailTwoFa ? 'active' : ''}`}
-                style={{ width: '100%' }} onClick={() => setEnableEmailTwoFa(v => !v)}>
-                <span className={`toggle-dot ${enableEmailTwoFa ? 'on' : ''}`} />
-                EMAIL 2FA (CODE SENT TO YOUR EMAIL)
-              </button>
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 8, letterSpacing: 2.5, color: 'var(--accent-2)', marginBottom: 8 }}>
+                2FA METHOD — SELECT AT LEAST ONE <span style={{ color: 'var(--danger)' }}>*</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <button className={`toggle-btn ${enableTotp ? 'active' : ''}`}
+                  style={{ width: '100%' }} onClick={() => setEnableTotp(v => !v)}>
+                  <span className={`toggle-dot ${enableTotp ? 'on' : ''}`} />
+                  TOTP (GOOGLE AUTHENTICATOR / AUTHY)
+                </button>
+                <button className={`toggle-btn ${enableEmailTwoFa ? 'active' : ''}`}
+                  style={{ width: '100%' }} onClick={() => setEnableEmailTwoFa(v => !v)}>
+                  <span className={`toggle-dot ${enableEmailTwoFa ? 'on' : ''}`} />
+                  EMAIL OTP (CODE SENT TO YOUR EMAIL)
+                </button>
+              </div>
             </div>
 
             {error && (
