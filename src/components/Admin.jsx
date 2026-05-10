@@ -70,7 +70,7 @@ export default function Admin({ token, onLogout, theme, onToggleTheme }) {
         ✕ LOGOUT
       </button>
 
-      <div style={{ width: '100%', maxWidth: 960, margin: '0 auto' }}>
+      <div className="admin-content" style={{ width: '100%', maxWidth: 960, margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <span className="login-title">SICVAULT</span>
           <div className="login-divider" style={{ marginTop: 12 }} />
@@ -93,7 +93,7 @@ export default function Admin({ token, onLogout, theme, onToggleTheme }) {
 
         {/* Broadcast */}
         <div className="section-heading" style={{ marginBottom: 12 }}>SYSTEM BROADCAST</div>
-        <div style={{ display: 'flex', gap: 8, marginBottom: 28, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 28, alignItems: 'center', flexWrap: 'wrap' }}>
           <input
             className="input" placeholder="type a message to broadcast to all users on login..."
             style={{ flex: 1, fontSize: 9, letterSpacing: 1.5 }}
@@ -133,7 +133,7 @@ export default function Admin({ token, onLogout, theme, onToggleTheme }) {
         {loading ? (
           <div style={{ fontSize: 9, color: 'var(--text-dim)', letterSpacing: 2, padding: '24px 0' }}>LOADING...</div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
+          <div className="admin-table-wrap">
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 9, letterSpacing: 1 }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border-bright)' }}>

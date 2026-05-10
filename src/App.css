@@ -1085,3 +1085,167 @@
   78%  { opacity: 1; }
   100% { opacity: 0; }
 }
+
+/* ── Mobile nav ── */
+.mobile-nav {
+  display: none;
+}
+
+/* ── Mobile styles ── */
+@media (max-width: 640px) {
+  /* Hide desktop sidebar, show bottom nav */
+  .sidebar {
+    display: none;
+  }
+
+  .mobile-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 60px;
+    background: var(--bg-1);
+    border-top: 1px solid var(--border-bright);
+    box-shadow: 0 -4px 20px var(--glow-dim);
+    z-index: 50;
+  }
+
+  .mobile-nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    font-family: 'Modeseven', monospace;
+    font-size: 7px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.15s;
+    padding: 8px 0;
+  }
+
+  .mobile-nav-item.active {
+    color: var(--accent-2);
+    text-shadow: var(--glow-text);
+    border-top: 2px solid var(--accent-1);
+  }
+
+  .mobile-nav-item .nav-icon {
+    font-size: 18px;
+    width: auto;
+  }
+
+  /* Main layout fills full width */
+  .main-content {
+    width: 100%;
+  }
+
+  /* Content area — add bottom padding for nav bar */
+  .content-area {
+    padding: 16px 14px 80px;
+  }
+
+  /* Topbar */
+  .topbar {
+    padding: 0 14px;
+    height: 48px;
+    min-height: 48px;
+  }
+
+  .topbar-title {
+    font-size: 8px;
+    letter-spacing: 2px;
+  }
+
+  .twofa-badge {
+    display: none;
+  }
+
+  .theme-toggle span:not(.theme-icon) {
+    display: none;
+  }
+
+  /* Login card — fluid */
+  .login-card {
+    width: calc(100vw - 32px);
+    padding: 28px 20px;
+  }
+
+  .login-title {
+    font-size: 18px;
+  }
+
+  /* Modal — fluid */
+  .modal {
+    width: calc(100vw - 24px);
+    max-height: 92vh;
+  }
+
+  /* Generator — single column */
+  .generator-layout {
+    grid-template-columns: 1fr;
+  }
+
+  /* Vault header — stack */
+  .vault-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .vault-search {
+    max-width: 100%;
+  }
+
+  .vault-actions {
+    justify-content: flex-end;
+  }
+
+  /* Vault stats — wrap */
+  .vault-stats {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .stat-card {
+    flex: 1;
+    min-width: calc(33% - 6px);
+    padding: 10px 12px;
+  }
+
+  .stat-value {
+    font-size: 18px;
+  }
+
+  /* Entry cards — single column */
+  .entries-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Admin table — horizontal scroll */
+  .admin-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Admin padding */
+  .admin-content {
+    padding: 20px 16px 80px;
+  }
+
+  /* Login screen — allow scroll on small phones */
+  .login-screen {
+    align-items: flex-start;
+    padding: 40px 0 24px;
+    overflow-y: auto;
+    height: auto;
+    min-height: 100vh;
+  }
+
+  /* Settings panels */
+  .settings-panel {
+    padding: 16px;
+  }
+}
