@@ -15,7 +15,16 @@ function b32Decode(str) {
 
 export function generateTOTPSecret() {
   const bytes = crypto.getRandomValues(new Uint8Array(20))
-  return Array.from(bytes).map(b => B32[b % 32]).join('')
+  let result = '', buf = 0, bitsLeft = 0
+  for (const byte of bytes) {
+    buf = (buf << 8) | byte
+    bitsLeft += 8
+    while (bitsLeft >= 5) {
+      result += B32[(buf >>> (bitsLeft - 5)) & 31]
+      bitsLeft -= 5
+    }
+  }
+  return result  // 32 chars, proper base32, no padding needed
 }
 
 export async function verifyTOTP(secret, token, windowSize = 1) {
