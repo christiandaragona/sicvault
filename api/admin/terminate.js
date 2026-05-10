@@ -10,11 +10,11 @@ export default async function handler(req, res) {
 
   const sql = getDb()
   const rows = await sql`
-    UPDATE users SET status = 'terminated'
-    WHERE username = ${username.toLowerCase()} AND status = 'active'
+    DELETE FROM users
+    WHERE username = ${username.toLowerCase()}
     RETURNING id
   `
-  if (!rows.length) return res.status(404).json({ error: 'ACTIVE USER NOT FOUND' })
+  if (!rows.length) return res.status(404).json({ error: 'USER NOT FOUND' })
 
   return res.json({ ok: true })
 }
