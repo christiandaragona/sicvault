@@ -1,11 +1,51 @@
 import { useState } from 'react'
+import { deriveKey, decryptVault, loadVaultFromStorage } from '../lib/crypto'
+import { verifyTOTP } from '../lib/totp'
 
 export default function Login({ onLogin, theme, onToggleTheme }) {
+  const [pw, setPw]         = useState('')
+  const [token, setToken]   = useState('')
   const [showPw, setShowPw] = useState(false)
+  const [error, setError]   = useState('')
+  const [working, setWorking] = useState(false)
+
+  async function handleAuth() {
+    setError('')
+    if (!pw) return setError('ENTER YOUR MASTER PASSWORD')
+    setWorking(true)
+    try {
+      const stored = loadVaultFromStorage()
+      if (!stored) throw new Error('NO VAULT FOUND')
+
+      const key  = await deriveKey(pw, stored.salt)
+      let vault
+      try {
+        vault = await decryptVault(key, stored.iv, stored.ciphertext)
+      } catch {
+        throw new Error('INCORRECT PASSWORD')
+      }
+
+      if (vault.settings?.totpEnabled) {
+        if (!token || token.length < 6) {
+          setError('ENTER YOUR 6-DIGIT 2FA CODE')
+          setWorking(false)
+          return
+        }
+        const ok = await verifyTOTP(vault.settings.totpSecret, token)
+        if (!ok) throw new Error('INVALID 2FA CODE')
+      }
+
+      onLogin(key, vault)
+    } catch (e) {
+      setError(e.message)
+      setWorking(false)
+    }
+  }
 
   return (
     <div className="login-screen">
-      <button className="theme-toggle" onClick={onToggleTheme} style={{ position: 'absolute', top: 20, right: 20, zIndex: 20 }}>
+      <button className="theme-toggle" onClick={onToggleTheme}
+        style={{ position: 'absolute', top: 20, right: 20, zIndex: 20 }}>
         <span className="theme-icon">{theme === 'night' ? '☀' : '🌙'}</span>
         <span>{theme === 'night' ? 'DAY' : 'NIGHT'}</span>
       </button>
@@ -13,7 +53,7 @@ export default function Login({ onLogin, theme, onToggleTheme }) {
       <div className="login-card">
         <div className="login-logo">
           <span className="login-title">SICVAULT</span>
-          <span className="login-version" style={{ display: 'block', fontSize: 9, letterSpacing: 5, color: 'var(--text-dim)', marginTop: 4 }}>v1.0</span>
+          <span style={{ display: 'block', fontSize: 9, letterSpacing: 5, color: 'var(--text-dim)', marginTop: 4 }}>v1.0</span>
           <div className="login-divider" />
           <span className="login-subtitle">SECURE VAULT SYSTEM</span>
         </div>
@@ -21,53 +61,42 @@ export default function Login({ onLogin, theme, onToggleTheme }) {
         <div className="form-group">
           <label className="form-label">MASTER PASSWORD</label>
           <div className="input-wrapper">
-            <input
-              className="input"
-              type={showPw ? 'text' : 'password'}
+            <input className="input" type={showPw ? 'text' : 'password'}
               placeholder="enter master password..."
               autoComplete="current-password"
-            />
-            <span
-              className="input-icon"
-              style={{ cursor: 'pointer', pointerEvents: 'all' }}
-              onClick={() => setShowPw(v => !v)}
-            >
+              value={pw} onChange={e => setPw(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleAuth()} />
+            <span className="input-icon" style={{ cursor: 'pointer', pointerEvents: 'all' }}
+              onClick={() => setShowPw(v => !v)}>
               {showPw ? '🙈' : '👁'}
             </span>
           </div>
         </div>
 
         <div className="form-group">
-          <label className="form-label">2FA VERIFICATION CODE</label>
+          <label className="form-label">2FA CODE <span style={{ color: 'var(--text-dim)', fontWeight: 'normal' }}>(IF ENABLED)</span></label>
           <div className="input-wrapper">
-            <input
-              className="input"
-              type="text"
-              placeholder="000000"
-              maxLength={6}
+            <input className="input" type="text" placeholder="000000" maxLength={6}
               style={{ letterSpacing: 6, textAlign: 'center' }}
-            />
+              value={token} onChange={e => setToken(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleAuth()} />
             <span className="input-icon">🔐</span>
           </div>
         </div>
 
-        <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div className="twofa-badge">
-            <span className="twofa-dot" />
-            2FA ACTIVE
+        {error && (
+          <div style={{ fontSize: 8, letterSpacing: 1.5, color: 'var(--danger)', marginBottom: 12 }}>
+            ⚠ {error}
           </div>
-          <span style={{ fontSize: 8, color: 'var(--text-dim)', letterSpacing: 1.5 }}>
-            USE AUTHENTICATOR APP
-          </span>
-        </div>
+        )}
 
-        <button className="btn btn-primary login-btn" onClick={onLogin}>
-          ▶ AUTHENTICATE
+        <button className="btn btn-primary login-btn" onClick={handleAuth} disabled={working}>
+          {working ? 'DECRYPTING...' : '▶ AUTHENTICATE'}
         </button>
 
         <div className="login-status">
           <span className="status-dot" />
-          VAULT ENCRYPTED · AES-256 · PBKDF2
+          VAULT ENCRYPTED · AES-256-GCM · PBKDF2
         </div>
       </div>
     </div>

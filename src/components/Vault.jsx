@@ -1,23 +1,23 @@
 import { useState } from 'react'
 import AddEntryModal from './AddEntryModal'
 
-const MOCK_ENTRIES = [
-  { id: 1, site: 'GitHub',      username: 'sharp01',            category: 'DEV',      hasApple: true },
-  { id: 2, site: 'Gmail',       username: 'c.daragona@gmail',   category: 'EMAIL',    hasApple: true },
-  { id: 3, site: 'AWS Console', username: 'root@awsaccount',    category: 'CLOUD',    hasApple: false },
-  { id: 4, site: 'Netflix',     username: 'sharp01@email.com',  category: 'MEDIA',    hasApple: true },
-  { id: 5, site: 'Chase Bank',  username: 'christiand01',       category: 'FINANCE',  hasApple: true },
-  { id: 6, site: 'Discord',     username: 'sharp#0001',         category: 'SOCIAL',   hasApple: false },
-]
-
-function EntryCard({ entry, onSaveApple }) {
+function EntryCard({ entry, onDelete, onCopyPassword }) {
   const [revealed, setRevealed] = useState(false)
-  const [copied, setCopied]   = useState(false)
+  const [copied, setCopied]     = useState(false)
 
   function handleCopy() {
+    onCopyPassword(entry.password)
     setCopied(true)
     setTimeout(() => setCopied(false), 1500)
   }
+
+  function handleSaveApple() {
+    if (!navigator.credentials || !window.PasswordCredential) return
+    const cred = new PasswordCredential({ id: entry.username, password: entry.password, name: entry.site })
+    navigator.credentials.store(cred)
+  }
+
+  const canSaveApple = typeof window !== 'undefined' && !!window.PasswordCredential
 
   return (
     <div className="entry-card">
@@ -31,10 +31,17 @@ function EntryCard({ entry, onSaveApple }) {
         <span className="entry-field-value">{entry.username}</span>
       </div>
 
+      {entry.url && (
+        <div className="entry-row">
+          <span className="entry-field-label">URL</span>
+          <span className="entry-field-value" style={{ fontSize: 9 }}>{entry.url}</span>
+        </div>
+      )}
+
       <div className="entry-row">
         <span className="entry-field-label">PASSWORD</span>
         <span className={`entry-field-value ${revealed ? '' : 'masked'}`}>
-          {revealed ? 'Tr0ub4dor&3_x9K!' : '••••••••••••'}
+          {revealed ? entry.password : '••••••••••••'}
         </span>
       </div>
 
@@ -45,15 +52,12 @@ function EntryCard({ entry, onSaveApple }) {
         <button className="btn btn-sm btn-icon" onClick={handleCopy} title="Copy password">
           {copied ? '✓' : '⧉'}
         </button>
-        <button className="btn btn-sm" style={{ fontSize: 7, letterSpacing: 1 }}>
-          ✎ EDIT
-        </button>
-        {entry.hasApple && (
-          <button className="btn btn-sm" style={{ fontSize: 7, letterSpacing: 1 }} onClick={() => onSaveApple(entry)}>
+        {canSaveApple && (
+          <button className="btn btn-sm" style={{ fontSize: 7, letterSpacing: 1 }} onClick={handleSaveApple}>
             🍎 SAVE
           </button>
         )}
-        <button className="btn btn-sm btn-danger" style={{ marginLeft: 'auto' }}>
+        <button className="btn btn-sm btn-danger" style={{ marginLeft: 'auto' }} onClick={() => onDelete(entry.id)}>
           ✕
         </button>
       </div>
@@ -61,14 +65,21 @@ function EntryCard({ entry, onSaveApple }) {
   )
 }
 
-export default function Vault() {
+export default function Vault({ entries, onAdd, onDelete }) {
   const [modalOpen, setModalOpen] = useState(false)
   const [search, setSearch]       = useState('')
+  const [copied, setCopied]       = useState(false)
 
-  const filtered = MOCK_ENTRIES.filter(e =>
+  const filtered = entries.filter(e =>
     e.site.toLowerCase().includes(search.toLowerCase()) ||
     e.username.toLowerCase().includes(search.toLowerCase())
   )
+
+  function handleCopyPassword(password) {
+    navigator.clipboard.writeText(password).catch(() => {})
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1500)
+  }
 
   return (
     <div>
@@ -76,7 +87,7 @@ export default function Vault() {
 
       <div className="vault-stats">
         <div className="stat-card">
-          <span className="stat-value">{MOCK_ENTRIES.length}</span>
+          <span className="stat-value">{entries.length}</span>
           <span className="stat-label">STORED ENTRIES</span>
         </div>
         <div className="stat-card">
@@ -92,28 +103,46 @@ export default function Vault() {
       <div className="vault-header">
         <div className="vault-search">
           <span className="search-icon">⌕</span>
-          <input
-            className="input"
-            style={{ paddingLeft: 36 }}
+          <input className="input" style={{ paddingLeft: 36 }}
             placeholder="search entries..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
+            value={search} onChange={e => setSearch(e.target.value)} />
         </div>
         <div className="vault-actions">
+          {copied && (
+            <span style={{ fontSize: 8, letterSpacing: 1.5, color: 'var(--accent-1)' }}>
+              ✓ COPIED
+            </span>
+          )}
           <button className="btn btn-primary" onClick={() => setModalOpen(true)}>
             + ADD ENTRY
           </button>
         </div>
       </div>
 
-      <div className="entries-grid">
-        {filtered.map(entry => (
-          <EntryCard key={entry.id} entry={entry} onSaveApple={() => {}} />
-        ))}
-      </div>
+      {entries.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-dim)', fontSize: 9, letterSpacing: 2 }}>
+          <div style={{ fontSize: 32, marginBottom: 16 }}>🔒</div>
+          VAULT IS EMPTY — ADD YOUR FIRST ENTRY
+        </div>
+      ) : (
+        <div className="entries-grid">
+          {filtered.map(entry => (
+            <EntryCard
+              key={entry.id}
+              entry={entry}
+              onDelete={onDelete}
+              onCopyPassword={handleCopyPassword}
+            />
+          ))}
+        </div>
+      )}
 
-      {modalOpen && <AddEntryModal onClose={() => setModalOpen(false)} />}
+      {modalOpen && (
+        <AddEntryModal
+          onClose={() => setModalOpen(false)}
+          onSave={entry => { onAdd(entry); setModalOpen(false) }}
+        />
+      )}
     </div>
   )
 }
