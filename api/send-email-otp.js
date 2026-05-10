@@ -20,7 +20,7 @@ export default async function handler(req, res) {
   await sql`DELETE FROM email_otps WHERE email = ${email}`
   await sql`INSERT INTO email_otps (email, otp, expires_at) VALUES (${email}, ${otp}, ${expires})`
 
-  await resend.emails.send({
+  const { error: sendError } = await resend.emails.send({
     from: FROM,
     to: email,
     subject: 'SicVault — Login Verification Code',
@@ -36,6 +36,11 @@ export default async function handler(req, res) {
       </p>
     `),
   })
+
+  if (sendError) {
+    console.error('Resend error:', sendError)
+    return res.status(500).json({ error: `EMAIL SEND FAILED: ${sendError.message}` })
+  }
 
   return res.json({ ok: true })
 }
