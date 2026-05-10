@@ -3,11 +3,12 @@ import { deriveKey, decryptVault, loadVaultFromStorage } from '../lib/crypto'
 import { verifyTOTP } from '../lib/totp'
 
 export default function Login({ onLogin, theme, onToggleTheme }) {
-  const [pw, setPw]         = useState('')
-  const [token, setToken]   = useState('')
-  const [showPw, setShowPw] = useState(false)
-  const [error, setError]   = useState('')
-  const [working, setWorking] = useState(false)
+  const [pw, setPw]               = useState('')
+  const [token, setToken]         = useState('')
+  const [showPw, setShowPw]       = useState(false)
+  const [error, setError]         = useState('')
+  const [working, setWorking]     = useState(false)
+  const [unlocking, setUnlocking] = useState(false)
 
   async function handleAuth() {
     setError('')
@@ -35,7 +36,9 @@ export default function Login({ onLogin, theme, onToggleTheme }) {
         if (!ok) throw new Error('INVALID 2FA CODE')
       }
 
-      onLogin(key, vault)
+      setWorking(false)
+      setUnlocking(true)
+      setTimeout(() => onLogin(key, vault), 1700)
     } catch (e) {
       setError(e.message)
       setWorking(false)
@@ -90,7 +93,7 @@ export default function Login({ onLogin, theme, onToggleTheme }) {
           </div>
         )}
 
-        <button className="btn btn-primary login-btn" onClick={handleAuth} disabled={working}>
+        <button className="btn btn-primary login-btn" onClick={handleAuth} disabled={working || unlocking}>
           {working ? 'DECRYPTING...' : '▶ AUTHENTICATE'}
         </button>
 
@@ -99,6 +102,18 @@ export default function Login({ onLogin, theme, onToggleTheme }) {
           VAULT ENCRYPTED · AES-256-GCM · PBKDF2
         </div>
       </div>
+
+      {unlocking && (
+        <div className="unlock-overlay">
+          <div className="unlock-lock">
+            <div className="lock-shackle" />
+            <div className="lock-body">
+              <div className="lock-keyhole" />
+            </div>
+          </div>
+          <div className="unlock-label">ACCESS GRANTED</div>
+        </div>
+      )}
     </div>
   )
 }

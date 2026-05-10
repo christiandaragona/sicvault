@@ -985,3 +985,103 @@
   box-shadow: 0 0 5px var(--glow);
   animation: pulse 2s infinite;
 }
+
+/* ── Unlock animation ── */
+.unlock-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  z-index: 8;
+  background: var(--bg-0);
+  animation: unlockFade 1.7s ease forwards;
+}
+
+@keyframes unlockFade {
+  0%   { opacity: 0; }
+  15%  { opacity: 1; }
+  78%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.unlock-lock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: lockGlow 1.7s ease forwards;
+}
+
+@keyframes lockGlow {
+  0%   { filter: brightness(0.4); }
+  25%  { filter: brightness(1); }
+  65%  { filter: brightness(1.1) drop-shadow(0 0 14px var(--glow)); }
+  100% { filter: brightness(2.5) drop-shadow(0 0 30px var(--accent-2)); }
+}
+
+.lock-shackle {
+  width: 38px;
+  height: 30px;
+  border: 3px solid var(--accent-1);
+  border-bottom: none;
+  border-radius: 19px 19px 0 0;
+  box-shadow: 0 0 12px var(--glow), inset 0 0 8px rgba(144, 169, 85, 0.08);
+  transform-origin: right bottom;
+  animation: shackleUnlock 1.7s ease forwards;
+}
+
+@keyframes shackleUnlock {
+  0%   { transform: translateY(0) rotate(0deg); }
+  22%  { transform: translateY(0) rotate(0deg); }
+  58%  { transform: translateY(-12px) rotate(-58deg); }
+  100% { transform: translateY(-12px) rotate(-58deg); }
+}
+
+.lock-body {
+  width: 66px;
+  height: 54px;
+  border: 3px solid var(--border-bright);
+  box-shadow: var(--glow-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lock-keyhole {
+  width: 13px;
+  height: 13px;
+  border: 2px solid var(--accent-1);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--glow);
+  position: relative;
+}
+
+.lock-keyhole::after {
+  content: '';
+  position: absolute;
+  top: 9px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 9px;
+  background: var(--accent-1);
+  box-shadow: 0 0 6px var(--glow);
+}
+
+.unlock-label {
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--accent-2);
+  text-shadow: var(--glow-text);
+  animation: unlockLabel 1.7s ease forwards;
+}
+
+@keyframes unlockLabel {
+  0%   { opacity: 0; letter-spacing: 12px; }
+  38%  { opacity: 0; letter-spacing: 12px; }
+  62%  { opacity: 1; letter-spacing: 6px; }
+  78%  { opacity: 1; }
+  100% { opacity: 0; }
+}
