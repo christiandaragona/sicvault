@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { generateSalt, deriveKey, encryptVault, saveVaultToStorage } from '../lib/crypto'
 import { consumeResetToken } from '../lib/api'
 
-export default function ResetPassword({ token, username, onComplete, theme, onToggleTheme }) {
+export default function ResetPassword({ token, username, onComplete }) {
   const [pw, setPw]           = useState('')
   const [confirm, setConfirm] = useState('')
   const [showPw, setShowPw]   = useState(false)
@@ -30,19 +30,12 @@ export default function ResetPassword({ token, username, onComplete, theme, onTo
 
   return (
     <div className="login-screen">
-      <button className="theme-toggle" onClick={onToggleTheme}
-        style={{ position: 'absolute', top: 20, right: 20, zIndex: 20 }}>
-        <span className="theme-icon">{theme === 'night' ? '☀' : '🌙'}</span>
-        <span>{theme === 'night' ? 'DAY' : 'NIGHT'}</span>
-      </button>
 
       <div className="login-card">
-        <div className="login-logo">
-          <span className="login-title">SICVAULT</span>
-          <div className="login-divider" />
-          <span className="login-subtitle">RESET MASTER PASSWORD</span>
+        <div style={{ textAlign: 'center', marginBottom: 20 }}>
+          <span className="login-title">RESET PASSWORD</span>
+          <div className="login-divider" style={{ marginTop: 8, marginBottom: 0 }} />
         </div>
-
         <div style={{ fontSize: 8, color: 'var(--text-dim)', letterSpacing: 1.5, marginBottom: 20, lineHeight: 2 }}>
           ACCOUNT: <span style={{ color: 'var(--accent-2)' }}>{username.toUpperCase()}</span>
           <br />

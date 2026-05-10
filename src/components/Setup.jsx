@@ -3,7 +3,7 @@ import { generateSalt, deriveKey, encryptVault, saveVaultToStorage, vaultExistsF
 import { generateTOTPSecret, verifyTOTP, getTOTPUri } from '../lib/totp'
 import { registerUser } from '../lib/api'
 
-export default function Setup({ onComplete, onBack, theme, onToggleTheme }) {
+export default function Setup({ onComplete, onBack }) {
   const [step, setStep]           = useState('creds')  // 'creds' | 'totp' | 'working'
   const [username, setUsername]   = useState('')
   const [email, setEmail]         = useState('')
@@ -58,24 +58,14 @@ export default function Setup({ onComplete, onBack, theme, onToggleTheme }) {
 
   return (
     <div className="login-screen">
-      <button className="theme-toggle" onClick={onToggleTheme}
-        style={{ position: 'absolute', top: 20, right: 20, zIndex: 20 }}>
-        <span className="theme-icon">{theme === 'night' ? '☀' : '🌙'}</span>
-        <span>{theme === 'night' ? 'DAY' : 'NIGHT'}</span>
-      </button>
 
       <div className="login-card" style={{ maxWidth: 460 }}>
-        <div className="login-logo">
-          <span className="login-title">SICVAULT</span>
-          <span style={{ display: 'block', fontSize: 9, letterSpacing: 5, color: 'var(--text-dim)', marginTop: 4 }}>v1.0</span>
-          <div className="login-divider" />
-          <span className="login-subtitle">
-            {step === 'creds' ? 'CREATE ACCOUNT' : 'SETUP AUTHENTICATOR'}
-          </span>
-        </div>
-
         {step === 'creds' && (
           <>
+            <div style={{ textAlign: 'center', marginBottom: 24 }}>
+              <span className="login-title">CREATE ACCOUNT</span>
+              <div className="login-divider" style={{ marginTop: 8, marginBottom: 0 }} />
+            </div>
             <div className="form-group">
               <label className="form-label">USERNAME</label>
               <div className="input-wrapper">
@@ -143,6 +133,10 @@ export default function Setup({ onComplete, onBack, theme, onToggleTheme }) {
 
         {step === 'totp' && (
           <>
+            <div style={{ textAlign: 'center', marginBottom: 20 }}>
+              <span className="login-title">SETUP 2FA</span>
+              <div className="login-divider" style={{ marginTop: 8, marginBottom: 0 }} />
+            </div>
             <div style={{ fontSize: 8, letterSpacing: 1.5, color: 'var(--text-dim)', marginBottom: 16, lineHeight: 2 }}>
               OPEN YOUR AUTHENTICATOR APP AND ADD A NEW ACCOUNT MANUALLY USING THE KEY BELOW.
             </div>

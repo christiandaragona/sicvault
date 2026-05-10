@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { adminGetUsers, adminTerminate, adminSendReset, adminBroadcast, adminLock } from '../lib/api'
 
-export default function Admin({ token, onLogout, theme, onToggleTheme }) {
+export default function Admin({ token, onLogout }) {
   const [users, setUsers]       = useState([])
   const [loading, setLoading]   = useState(true)
   const [msg, setMsg]           = useState({ text: '', ok: true })
@@ -60,13 +60,8 @@ export default function Admin({ token, onLogout, theme, onToggleTheme }) {
 
   return (
     <div className="login-screen" style={{ alignItems: 'flex-start', overflowY: 'auto', padding: '48px 40px' }}>
-      <button className="theme-toggle" onClick={onToggleTheme}
-        style={{ position: 'fixed', top: 20, right: 20, zIndex: 20 }}>
-        <span className="theme-icon">{theme === 'night' ? '☀' : '🌙'}</span>
-        <span>{theme === 'night' ? 'DAY' : 'NIGHT'}</span>
-      </button>
       <button className="btn btn-sm btn-danger" onClick={onLogout}
-        style={{ position: 'fixed', top: 20, left: 20, zIndex: 20 }}>
+        style={{ position: 'fixed', top: 20, left: 80, zIndex: 20 }}>
         ✕ LOGOUT
       </button>
 

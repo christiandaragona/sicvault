@@ -1,20 +1,11 @@
-export default function Gateway({ onLogin, onCreate, onForgotPassword, theme, onToggleTheme }) {
+export default function Gateway({ onLogin, onCreate, onForgotPassword }) {
   return (
     <div className="login-screen">
-      <button className="theme-toggle" onClick={onToggleTheme}
-        style={{ position: 'absolute', top: 20, right: 20, zIndex: 20 }}>
-        <span className="theme-icon">{theme === 'night' ? '☀' : '🌙'}</span>
-        <span>{theme === 'night' ? 'DAY' : 'NIGHT'}</span>
-      </button>
 
       <div className="login-card" style={{ textAlign: 'center' }}>
-        <div className="login-logo">
-          <span className="login-title">SICVAULT</span>
-          <span style={{ display: 'block', fontSize: 9, letterSpacing: 5, color: 'var(--text-dim)', marginTop: 4 }}>v1.0</span>
-          <div className="login-divider" />
-          <span className="login-subtitle">SECURE VAULT SYSTEM</span>
-        </div>
-
+        <span className="login-title">SICVAULT</span>
+        <div className="login-divider" />
+        <span className="login-subtitle" style={{ marginBottom: 28, display: 'block' }}>SECURE VAULT SYSTEM</span>
         <div style={{ fontSize: 8, letterSpacing: 2, color: 'var(--text-dim)', marginBottom: 28, lineHeight: 2 }}>
           AES-256-GCM · PBKDF2 · TOTP 2FA
         </div>

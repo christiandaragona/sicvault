@@ -3,7 +3,7 @@ import { deriveKey, decryptVault, loadVaultFromStorage } from '../lib/crypto'
 import { verifyTOTP } from '../lib/totp'
 import { checkAccount, adminLogin } from '../lib/api'
 
-export default function Login({ onLogin, onAdminLogin, onBack, theme, onToggleTheme }) {
+export default function Login({ onLogin, onAdminLogin, onBack }) {
   const [username, setUsername]   = useState('')
   const [pw, setPw]               = useState('')
   const [token, setToken]         = useState('')
@@ -70,21 +70,13 @@ export default function Login({ onLogin, onAdminLogin, onBack, theme, onToggleTh
 
   return (
     <div className="login-screen">
-      <button className="theme-toggle" onClick={onToggleTheme}
-        style={{ position: 'absolute', top: 20, right: 20, zIndex: 20 }}>
-        <span className="theme-icon">{theme === 'night' ? '☀' : '🌙'}</span>
-        <span>{theme === 'night' ? 'DAY' : 'NIGHT'}</span>
-      </button>
 
       <div className="login-card">
-        <div className="login-logo">
-          <span className="login-title">SICVAULT</span>
-          <span style={{ display: 'block', fontSize: 9, letterSpacing: 5, color: 'var(--text-dim)', marginTop: 4 }}>v1.0</span>
-          <div className="login-divider" />
-          <span className="login-subtitle">SECURE VAULT SYSTEM</span>
-        </div>
-
         <>
+          <div style={{ textAlign: 'center', marginBottom: 24 }}>
+            <span className="login-title">AUTHENTICATE</span>
+            <div className="login-divider" style={{ marginTop: 8, marginBottom: 0 }} />
+          </div>
           <div className="form-group">
               <label className="form-label">USERNAME</label>
               <div className="input-wrapper">

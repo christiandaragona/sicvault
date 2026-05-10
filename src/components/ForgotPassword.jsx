@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { forgotPassword } from '../lib/api'
 
-export default function ForgotPassword({ onBack, theme, onToggleTheme }) {
+export default function ForgotPassword({ onBack }) {
   const [email, setEmail]   = useState('')
   const [sent, setSent]     = useState(false)
   const [error, setError]   = useState('')
@@ -23,21 +23,14 @@ export default function ForgotPassword({ onBack, theme, onToggleTheme }) {
 
   return (
     <div className="login-screen">
-      <button className="theme-toggle" onClick={onToggleTheme}
-        style={{ position: 'absolute', top: 20, right: 20, zIndex: 20 }}>
-        <span className="theme-icon">{theme === 'night' ? '☀' : '🌙'}</span>
-        <span>{theme === 'night' ? 'DAY' : 'NIGHT'}</span>
-      </button>
 
       <div className="login-card">
-        <div className="login-logo">
-          <span className="login-title">SICVAULT</span>
-          <div className="login-divider" />
-          <span className="login-subtitle">FORGOT PASSWORD</span>
-        </div>
-
         {!sent ? (
           <>
+            <div style={{ textAlign: 'center', marginBottom: 20 }}>
+              <span className="login-title">RECOVERY</span>
+              <div className="login-divider" style={{ marginTop: 8, marginBottom: 0 }} />
+            </div>
             <div style={{ fontSize: 8, color: 'var(--text-dim)', letterSpacing: 1.5, marginBottom: 20, lineHeight: 2 }}>
               ENTER YOUR REGISTERED EMAIL ADDRESS AND WE'LL SEND YOU A PASSWORD RESET LINK.
             </div>

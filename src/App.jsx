@@ -10,6 +10,7 @@ import Sidebar from './components/Sidebar'
 import Vault from './components/Vault'
 import Generator from './components/Generator'
 import Settings from './components/Settings'
+import Logo from './components/Logo'
 import { encryptVault, saveVaultToStorage, loadVaultFromStorage } from './lib/crypto'
 import { verifyResetToken, getAlert } from './lib/api'
 
@@ -114,131 +115,95 @@ export default function App() {
     await persistVault(updated)
   }
 
-  if (screen === 'reset') {
-    return (
-      <ResetPassword
-        token={resetToken}
-        username={resetUsername}
-        onComplete={handleAuthSuccess}
-        theme={theme}
-        onToggleTheme={toggleTheme}
-      />
-    )
-  }
-
-  if (screen === 'admin') {
-    return (
-      <Admin
-        token={adminToken}
-        onLogout={lock}
-        theme={theme}
-        onToggleTheme={toggleTheme}
-      />
-    )
-  }
-
-  if (screen === 'gateway') {
-    return (
-      <Gateway
-        onLogin={() => setScreen('login')}
-        onCreate={() => setScreen('setup')}
-        onForgotPassword={() => setScreen('forgot')}
-        theme={theme}
-        onToggleTheme={toggleTheme}
-      />
-    )
-  }
-
-  if (screen === 'forgot') {
-    return (
-      <ForgotPassword
-        onBack={() => setScreen('gateway')}
-        theme={theme}
-        onToggleTheme={toggleTheme}
-      />
-    )
-  }
-
-  if (screen === 'setup') {
-    return (
-      <Setup
-        onComplete={handleAuthSuccess}
-        onBack={() => setScreen('gateway')}
-        theme={theme}
-        onToggleTheme={toggleTheme}
-      />
-    )
-  }
-
-  if (screen === 'login') {
-    return (
-      <Login
-        onLogin={handleAuthSuccess}
-        onAdminLogin={handleAdminLogin}
-        onBack={() => setScreen('gateway')}
-        theme={theme}
-        onToggleTheme={toggleTheme}
-      />
-    )
-  }
+  const insideApp = screen === 'app'
 
   return (
-    <div className="app">
-      <Sidebar view={view} setView={setView} onLock={lock} username={username} />
-
-      <div className="main-content">
-        <div className="topbar">
-          <span className="topbar-title">
-            {view === 'vault' ? '// CREDENTIAL VAULT' : view === 'generator' ? '// PASSWORD GENERATOR' : '// SETTINGS'}
-          </span>
-          <div className="topbar-right">
-            <div className="twofa-badge">
-              <span className="twofa-dot" />
-              {username.toUpperCase()} · SESSION ACTIVE
-            </div>
-            <button className="theme-toggle" onClick={toggleTheme}>
-              <span className="theme-icon">{theme === 'night' ? '☀' : '🌙'}</span>
-              <span>{theme === 'night' ? 'DAY MODE' : 'NIGHT MODE'}</span>
-            </button>
-          </div>
-        </div>
-
-        {alert && (
-          <div style={{
-            background: 'var(--danger-dim)', borderBottom: '1px solid var(--danger)',
-            padding: '10px 20px', fontSize: 8, letterSpacing: 2,
-            color: 'var(--danger)', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          }}>
-            <span>⚠ SYSTEM ALERT: {alert}</span>
-            <button onClick={() => setAlert(null)}
-              style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', fontSize: 10, fontFamily: 'inherit' }}>
-              ✕
-            </button>
-          </div>
-        )}
-
-        <div className="content-area">
-          {view === 'vault' && vault && (
-            <Vault
-              entries={vault.entries}
-              onAdd={handleAddEntry}
-              onDelete={handleDeleteEntry}
-            />
-          )}
-          {view === 'generator' && <Generator />}
-          {view === 'settings' && (
-            <Settings
-              username={username}
-              vault={vault}
-              vaultKey={vaultKey}
-              onVaultUpdate={(updated, newKey) => {
-                setVault(updated)
-                if (newKey) setVaultKey(newKey)
-              }}
-            />
-          )}
-        </div>
+    <>
+      {/* Global fixed overlay — logo top-right, theme toggle top-left */}
+      <div style={{ position: 'fixed', top: 16, right: 16, zIndex: 9999 }}>
+        <Logo locked={!insideApp} size={34} />
       </div>
-    </div>
+      <button className="theme-toggle" onClick={toggleTheme}
+        style={{ position: 'fixed', top: 16, left: 16, zIndex: 9999 }}>
+        <span className="theme-icon">{theme === 'night' ? '☀' : '🌙'}</span>
+        <span>{theme === 'night' ? 'DAY' : 'NIGHT'}</span>
+      </button>
+
+      {/* Screens */}
+      {screen === 'reset' && (
+        <ResetPassword token={resetToken} username={resetUsername} onComplete={handleAuthSuccess} />
+      )}
+      {screen === 'admin' && (
+        <Admin token={adminToken} onLogout={lock} />
+      )}
+      {screen === 'gateway' && (
+        <Gateway
+          onLogin={() => setScreen('login')}
+          onCreate={() => setScreen('setup')}
+          onForgotPassword={() => setScreen('forgot')}
+        />
+      )}
+      {screen === 'forgot' && (
+        <ForgotPassword onBack={() => setScreen('gateway')} />
+      )}
+      {screen === 'setup' && (
+        <Setup onComplete={handleAuthSuccess} onBack={() => setScreen('gateway')} />
+      )}
+      {screen === 'login' && (
+        <Login
+          onLogin={handleAuthSuccess}
+          onAdminLogin={handleAdminLogin}
+          onBack={() => setScreen('gateway')}
+        />
+      )}
+      {screen === 'app' && (
+        <div className="app">
+          <Sidebar view={view} setView={setView} onLock={lock} username={username} />
+          <div className="main-content">
+            <div className="topbar">
+              <span className="topbar-title">
+                {view === 'vault' ? '// CREDENTIAL VAULT' : view === 'generator' ? '// PASSWORD GENERATOR' : '// SETTINGS'}
+              </span>
+              <div className="twofa-badge" style={{ marginRight: 160 }}>
+                <span className="twofa-dot" />
+                {username.toUpperCase()} · SESSION ACTIVE
+              </div>
+            </div>
+
+            {alert && (
+              <div style={{
+                background: 'var(--danger-dim)', borderBottom: '1px solid var(--danger)',
+                padding: '10px 20px', fontSize: 8, letterSpacing: 2,
+                color: 'var(--danger)', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              }}>
+                <span>⚠ SYSTEM ALERT: {alert}</span>
+                <button onClick={() => setAlert(null)}
+                  style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', fontSize: 10, fontFamily: 'inherit' }}>
+                  ✕
+                </button>
+              </div>
+            )}
+
+            <div className="content-area">
+              {view === 'vault' && vault && (
+                <Vault entries={vault.entries} onAdd={handleAddEntry} onDelete={handleDeleteEntry} />
+              )}
+              {view === 'generator' && <Generator />}
+              {view === 'settings' && (
+                <Settings
+                  username={username}
+                  vault={vault}
+                  vaultKey={vaultKey}
+                  onVaultUpdate={(updated, newKey) => {
+                    setVault(updated)
+                    if (newKey) setVaultKey(newKey)
+                  }}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
