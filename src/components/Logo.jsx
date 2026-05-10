@@ -1,4 +1,4 @@
-export default function Logo({ locked = true, size = 38 }) {
+export default function Logo({ locked = true, size = 38, onToggleTheme }) {
   const h = size * 1.25
 
   return (
@@ -73,14 +73,19 @@ export default function Logo({ locked = true, size = 38 }) {
       </svg>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <span style={{
-          fontFamily: 'Modeseven, monospace',
-          fontSize: 13,
-          letterSpacing: 3,
-          color: 'var(--text-primary)',
-          textShadow: 'var(--glow-text)',
-          lineHeight: 1,
-        }}>
+        <span
+          onClick={onToggleTheme}
+          style={{
+            fontFamily: 'Modeseven, monospace',
+            fontSize: 13,
+            letterSpacing: 3,
+            color: 'var(--text-primary)',
+            textShadow: 'var(--glow-text)',
+            lineHeight: 1,
+            cursor: onToggleTheme ? 'pointer' : 'default',
+            userSelect: 'none',
+          }}
+        >
           SICVAULT
         </span>
         <span style={{

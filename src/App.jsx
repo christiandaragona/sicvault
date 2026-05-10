@@ -119,15 +119,10 @@ export default function App() {
 
   return (
     <>
-      {/* Global fixed overlay — logo top-right, theme toggle top-left */}
+      {/* Global fixed overlay — logo top-right, click SICVAULT text to toggle theme */}
       <div style={{ position: 'fixed', top: 16, right: 16, zIndex: 9999 }}>
-        <Logo locked={!insideApp} size={34} />
+        <Logo locked={!insideApp} size={34} onToggleTheme={toggleTheme} />
       </div>
-      <button className="theme-toggle" onClick={toggleTheme}
-        style={{ position: 'fixed', top: 16, left: 16, zIndex: 9999 }}>
-        <span className="theme-icon">{theme === 'night' ? '☀' : '🌙'}</span>
-        <span>{theme === 'night' ? 'DAY' : 'NIGHT'}</span>
-      </button>
 
       {/* Screens */}
       {screen === 'reset' && (
