@@ -3,8 +3,14 @@ CREATE TABLE IF NOT EXISTS users (
   username         VARCHAR(50)  UNIQUE NOT NULL,
   email            VARCHAR(255) UNIQUE NOT NULL,
   email_2fa_enabled BOOLEAN     DEFAULT FALSE,
-  status           VARCHAR(20)  DEFAULT 'active',
+  lock_message     TEXT,
   created_at       TIMESTAMPTZ  DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS broadcasts (
+  id         SERIAL PRIMARY KEY,
+  message    TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS password_resets (

@@ -7,7 +7,7 @@ export default async function handler(req, res) {
 
   const sql = getDb()
   const users = await sql`
-    SELECT username, email, email_2fa_enabled, status, created_at
+    SELECT username, email, lock_message, created_at
     FROM users ORDER BY created_at DESC
   `
   return res.json({ users })

@@ -10,7 +10,7 @@ import Sidebar from './components/Sidebar'
 import Vault from './components/Vault'
 import Generator from './components/Generator'
 import { encryptVault, saveVaultToStorage, loadVaultFromStorage } from './lib/crypto'
-import { verifyResetToken } from './lib/api'
+import { verifyResetToken, getAlert } from './lib/api'
 
 const LOCK_AFTER_MS = 5 * 60 * 1000
 
@@ -23,6 +23,7 @@ export default function App() {
   const [vault, setVault]       = useState(null)
   const [username, setUsername] = useState('')
   const [adminToken, setAdminToken] = useState(null)
+  const [alert, setAlert] = useState(null)
 
   // Password reset state (populated from URL ?reset= param)
   const [resetToken, setResetToken]     = useState(null)
@@ -79,11 +80,13 @@ export default function App() {
 
   function toggleTheme() { setTheme(t => t === 'night' ? 'day' : 'night') }
 
-  function handleAuthSuccess(key, loadedVault, user) {
+  async function handleAuthSuccess(key, loadedVault, user) {
     setVaultKey(key)
     setVault(loadedVault)
     setUsername(user)
     setScreen('app')
+    const r = await getAlert()
+    if (r.message) setAlert(r.message)
   }
 
   function handleAdminLogin(token) {
@@ -198,6 +201,20 @@ export default function App() {
             </button>
           </div>
         </div>
+
+        {alert && (
+          <div style={{
+            background: 'var(--danger-dim)', borderBottom: '1px solid var(--danger)',
+            padding: '10px 20px', fontSize: 8, letterSpacing: 2,
+            color: 'var(--danger)', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          }}>
+            <span>⚠ SYSTEM ALERT: {alert}</span>
+            <button onClick={() => setAlert(null)}
+              style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', fontSize: 10, fontFamily: 'inherit' }}>
+              ✕
+            </button>
+          </div>
+        )}
 
         <div className="content-area">
           {view === 'vault' && vault && (

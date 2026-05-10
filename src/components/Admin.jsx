@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
-import { adminGetUsers, adminTerminate, adminSendReset } from '../lib/api'
+import { adminGetUsers, adminTerminate, adminSendReset, adminBroadcast, adminLock } from '../lib/api'
 
 export default function Admin({ token, onLogout, theme, onToggleTheme }) {
-  const [users, setUsers]   = useState([])
-  const [loading, setLoading] = useState(true)
-  const [msg, setMsg]       = useState({ text: '', ok: true })
+  const [users, setUsers]       = useState([])
+  const [loading, setLoading]   = useState(true)
+  const [msg, setMsg]           = useState({ text: '', ok: true })
+  const [broadcastMsg, setBroadcastMsg] = useState('')
+  const [broadcastActive, setBroadcastActive] = useState(false)
 
   const flash = (text, ok = true) => { setMsg({ text, ok }); setTimeout(() => setMsg({ text: '', ok: true }), 4000) }
 
@@ -15,6 +17,29 @@ export default function Admin({ token, onLogout, theme, onToggleTheme }) {
     else setUsers(data.users || [])
     setLoading(false)
   }, [token])
+
+  async function handleBroadcast() {
+    const r = await adminBroadcast(broadcastMsg, token)
+    if (r.error) return flash(r.error, false)
+    setBroadcastActive(!!broadcastMsg.trim())
+    flash(broadcastMsg.trim() ? 'BROADCAST ACTIVATED' : 'BROADCAST CLEARED')
+  }
+
+  async function handleLock(username, currentLock) {
+    if (currentLock) {
+      const r = await adminLock(username, '', token)
+      if (r.error) return flash(r.error, false)
+      flash(`ACCOUNT "${username.toUpperCase()}" UNLOCKED`)
+      loadUsers()
+    } else {
+      const message = window.prompt(`Lock message for "${username}":`)
+      if (!message) return
+      const r = await adminLock(username, message, token)
+      if (r.error) return flash(r.error, false)
+      flash(`ACCOUNT "${username.toUpperCase()}" LOCKED`)
+      loadUsers()
+    }
+  }
 
   useEffect(() => { loadUsers() }, [loadUsers])
 
@@ -31,8 +56,7 @@ export default function Admin({ token, onLogout, theme, onToggleTheme }) {
     else flash(`RESET EMAIL SENT TO ${username.toUpperCase()}`)
   }
 
-  const active     = users.filter(u => u.status === 'active').length
-  const terminated = users.filter(u => u.status === 'terminated').length
+  const locked = users.filter(u => u.lock_message).length
 
   return (
     <div className="login-screen" style={{ alignItems: 'flex-start', overflowY: 'auto', padding: '48px 40px' }}>
@@ -57,14 +81,33 @@ export default function Admin({ token, onLogout, theme, onToggleTheme }) {
         <div style={{ display: 'flex', gap: 12, marginBottom: 28 }}>
           {[
             { label: 'TOTAL ACCOUNTS', value: users.length },
-            { label: 'ACTIVE',         value: active,     color: 'var(--accent-1)' },
-            { label: 'TERMINATED',     value: terminated, color: 'var(--danger)' },
+            { label: 'ACTIVE',         value: users.length - locked, color: 'var(--accent-1)' },
+            { label: 'LOCKED',         value: locked,                color: 'var(--danger)' },
           ].map(s => (
             <div key={s.label} className="stat-card" style={{ flex: 1 }}>
               <span className="stat-value" style={{ color: s.color }}>{s.value}</span>
               <span className="stat-label">{s.label}</span>
             </div>
           ))}
+        </div>
+
+        {/* Broadcast */}
+        <div className="section-heading" style={{ marginBottom: 12 }}>SYSTEM BROADCAST</div>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 28, alignItems: 'center' }}>
+          <input
+            className="input" placeholder="type a message to broadcast to all users on login..."
+            style={{ flex: 1, fontSize: 9, letterSpacing: 1.5 }}
+            value={broadcastMsg} onChange={e => setBroadcastMsg(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleBroadcast()}
+          />
+          <button className="btn btn-primary btn-sm" onClick={handleBroadcast}>
+            {broadcastActive ? '↺ UPDATE' : '▶ ACTIVATE'}
+          </button>
+          {broadcastActive && (
+            <button className="btn btn-sm btn-danger" onClick={() => { setBroadcastMsg(''); handleBroadcast() }}>
+              ✕ CLEAR
+            </button>
+          )}
         </div>
 
         {/* Flash message */}
@@ -94,7 +137,7 @@ export default function Admin({ token, onLogout, theme, onToggleTheme }) {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 9, letterSpacing: 1 }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border-bright)' }}>
-                  {['USERNAME', 'EMAIL', 'EMAIL 2FA', 'STATUS', 'CREATED', 'ACTIONS'].map(h => (
+                  {['USERNAME', 'EMAIL', 'STATUS', 'CREATED', 'ACTIONS'].map(h => (
                     <th key={h} style={{ padding: '8px 12px', color: 'var(--text-dim)', textAlign: 'left', letterSpacing: 2, fontWeight: 'normal' }}>
                       {h}
                     </th>
@@ -103,36 +146,34 @@ export default function Admin({ token, onLogout, theme, onToggleTheme }) {
               </thead>
               <tbody>
                 {users.length === 0 && (
-                  <tr><td colSpan={6} style={{ padding: '20px 12px', color: 'var(--text-dim)', textAlign: 'center', letterSpacing: 2 }}>NO ACCOUNTS YET</td></tr>
+                  <tr><td colSpan={5} style={{ padding: '20px 12px', color: 'var(--text-dim)', textAlign: 'center', letterSpacing: 2 }}>NO ACCOUNTS YET</td></tr>
                 )}
                 {users.map(u => (
-                  <tr key={u.username} style={{ borderBottom: '1px solid var(--border)', opacity: u.status === 'terminated' ? 0.45 : 1 }}>
+                  <tr key={u.username} style={{ borderBottom: '1px solid var(--border)', opacity: u.lock_message ? 0.6 : 1 }}>
                     <td style={{ padding: '10px 12px', color: 'var(--text-primary)' }}>{u.username}</td>
                     <td style={{ padding: '10px 12px', color: 'var(--text-secondary)', fontSize: 8 }}>{u.email}</td>
                     <td style={{ padding: '10px 12px' }}>
-                      <span style={{ color: u.email_2fa_enabled ? 'var(--accent-1)' : 'var(--text-dim)', letterSpacing: 1.5 }}>
-                        {u.email_2fa_enabled ? '● ON' : '○ OFF'}
-                      </span>
-                    </td>
-                    <td style={{ padding: '10px 12px' }}>
-                      <span style={{ color: u.status === 'active' ? 'var(--accent-1)' : 'var(--danger)', letterSpacing: 1.5 }}>
-                        {u.status.toUpperCase()}
-                      </span>
+                      {u.lock_message
+                        ? <span style={{ color: 'var(--danger)', letterSpacing: 1.5 }} title={u.lock_message}>● LOCKED</span>
+                        : <span style={{ color: 'var(--accent-1)', letterSpacing: 1.5 }}>● ACTIVE</span>
+                      }
                     </td>
                     <td style={{ padding: '10px 12px', color: 'var(--text-dim)', fontSize: 8 }}>
                       {new Date(u.created_at).toLocaleDateString()}
                     </td>
                     <td style={{ padding: '10px 12px' }}>
-                      {u.status === 'active' && (
-                        <div style={{ display: 'flex', gap: 6 }}>
-                          <button className="btn btn-sm" onClick={() => handleSendReset(u.username)}>
-                            ✉ RESET
-                          </button>
-                          <button className="btn btn-sm btn-danger" onClick={() => handleTerminate(u.username)}>
-                            ✕ TERMINATE
-                          </button>
-                        </div>
-                      )}
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button className="btn btn-sm" onClick={() => handleSendReset(u.username)}>
+                          ✉ RESET
+                        </button>
+                        <button className="btn btn-sm" style={{ color: u.lock_message ? 'var(--accent-1)' : 'var(--danger)', borderColor: u.lock_message ? 'var(--accent-1)' : 'var(--danger)' }}
+                          onClick={() => handleLock(u.username, u.lock_message)}>
+                          {u.lock_message ? '🔓 UNLOCK' : '🔒 LOCK'}
+                        </button>
+                        <button className="btn btn-sm btn-danger" onClick={() => handleTerminate(u.username)}>
+                          ✕ TERMINATE
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
