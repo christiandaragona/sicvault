@@ -10,8 +10,6 @@ export default function Setup({ onComplete, onBack, theme, onToggleTheme }) {
   const [pw, setPw]               = useState('')
   const [confirm, setConfirm]     = useState('')
   const [showPw, setShowPw]       = useState(false)
-  const [enableTotp, setEnableTotp]     = useState(false)
-  const [enableEmailTwoFa, setEnableEmailTwoFa] = useState(false)
   const [totpSecret, setTotpSecret]     = useState(() => generateTOTPSecret())
   const [totpToken, setTotpToken]       = useState('')
   const [error, setError]         = useState('')
@@ -25,9 +23,7 @@ export default function Setup({ onComplete, onBack, theme, onToggleTheme }) {
     if (vaultExistsForUser(username))  return setError('USERNAME ALREADY TAKEN ON THIS DEVICE')
     if (pw.length < 8)                 return setError('MASTER PASSWORD MUST BE AT LEAST 8 CHARACTERS')
     if (pw !== confirm)                return setError('PASSWORDS DO NOT MATCH')
-    if (!enableTotp && !enableEmailTwoFa) return setError('YOU MUST ENABLE AT LEAST ONE 2FA METHOD')
-    if (enableTotp) { setStep('totp'); return }
-    await createVault(null)
+    setStep('totp')
   }
 
   async function handleTotpConfirm() {
@@ -40,8 +36,7 @@ export default function Setup({ onComplete, onBack, theme, onToggleTheme }) {
   async function createVault(secret) {
     setWorking(true)
     try {
-      // Register in DB first
-      const reg = await registerUser(username.trim(), email.trim(), enableEmailTwoFa)
+      const reg = await registerUser(username.trim(), email.trim(), false)
       if (reg.error) throw new Error(reg.error)
 
       const salt = await generateSalt()
@@ -124,23 +119,6 @@ export default function Setup({ onComplete, onBack, theme, onToggleTheme }) {
               </div>
             </div>
 
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ fontSize: 8, letterSpacing: 2.5, color: 'var(--accent-2)', marginBottom: 8 }}>
-                2FA METHOD — SELECT AT LEAST ONE <span style={{ color: 'var(--danger)' }}>*</span>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <button className={`toggle-btn ${enableTotp ? 'active' : ''}`}
-                  style={{ width: '100%' }} onClick={() => setEnableTotp(v => !v)}>
-                  <span className={`toggle-dot ${enableTotp ? 'on' : ''}`} />
-                  TOTP (GOOGLE AUTHENTICATOR / AUTHY)
-                </button>
-                <button className={`toggle-btn ${enableEmailTwoFa ? 'active' : ''}`}
-                  style={{ width: '100%' }} onClick={() => setEnableEmailTwoFa(v => !v)}>
-                  <span className={`toggle-dot ${enableEmailTwoFa ? 'on' : ''}`} />
-                  EMAIL OTP (CODE SENT TO YOUR EMAIL)
-                </button>
-              </div>
-            </div>
 
             {error && (
               <div style={{ fontSize: 8, letterSpacing: 1.5, color: 'var(--danger)', marginBottom: 12 }}>
@@ -152,7 +130,7 @@ export default function Setup({ onComplete, onBack, theme, onToggleTheme }) {
               <button className="btn btn-sm" onClick={onBack}>← BACK</button>
               <button className="btn btn-primary login-btn" style={{ flex: 1, marginTop: 0 }}
                 onClick={handleCredsNext} disabled={working}>
-                {enableTotp ? '▶ NEXT: SETUP TOTP' : '▶ CREATE VAULT'}
+                ▶ NEXT: SETUP TOTP
               </button>
             </div>
 

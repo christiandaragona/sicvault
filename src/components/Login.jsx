@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { deriveKey, decryptVault, loadVaultFromStorage } from '../lib/crypto'
 import { verifyTOTP } from '../lib/totp'
-import { checkAccount, sendEmailOtp, verifyEmailOtp, adminLogin } from '../lib/api'
+import { checkAccount, adminLogin } from '../lib/api'
 
 export default function Login({ onLogin, onAdminLogin, onBack, theme, onToggleTheme }) {
   const [username, setUsername]   = useState('')
@@ -12,11 +12,6 @@ export default function Login({ onLogin, onAdminLogin, onBack, theme, onToggleTh
   const [working, setWorking]     = useState(false)
   const [unlocking, setUnlocking] = useState(false)
 
-  // Email OTP second step
-  const [emailOtpStep, setEmailOtpStep] = useState(false)
-  const [emailOtp, setEmailOtp]         = useState('')
-  const [pendingKey, setPendingKey]     = useState(null)
-  const [pendingVault, setPendingVault] = useState(null)
 
   async function handleAuth() {
     setError('')
@@ -62,17 +57,6 @@ export default function Login({ onLogin, onAdminLogin, onBack, theme, onToggleTh
         if (!ok) throw new Error('INVALID TOTP CODE')
       }
 
-      // Email 2FA — pause here and send OTP
-      if (acct.emailTwoFa) {
-        setPendingKey(key)
-        setPendingVault(vault)
-        const r = await sendEmailOtp(username.trim())
-        if (r.error) throw new Error(r.error)
-        setEmailOtpStep(true)
-        setWorking(false)
-        return
-      }
-
       // All checks passed
       setWorking(false)
       setUnlocking(true)
@@ -83,21 +67,6 @@ export default function Login({ onLogin, onAdminLogin, onBack, theme, onToggleTh
     }
   }
 
-  async function handleEmailOtpVerify() {
-    setError('')
-    if (!emailOtp || emailOtp.length < 6) return setError('ENTER YOUR 6-DIGIT EMAIL CODE')
-    setWorking(true)
-    try {
-      const r = await verifyEmailOtp(username.trim(), emailOtp)
-      if (r.error) throw new Error(r.error)
-      setWorking(false)
-      setUnlocking(true)
-      setTimeout(() => onLogin(pendingKey, pendingVault, username.trim()), 1700)
-    } catch (e) {
-      setError(e.message)
-      setWorking(false)
-    }
-  }
 
   return (
     <div className="login-screen">
@@ -112,14 +81,11 @@ export default function Login({ onLogin, onAdminLogin, onBack, theme, onToggleTh
           <span className="login-title">SICVAULT</span>
           <span style={{ display: 'block', fontSize: 9, letterSpacing: 5, color: 'var(--text-dim)', marginTop: 4 }}>v1.0</span>
           <div className="login-divider" />
-          <span className="login-subtitle">
-            {emailOtpStep ? 'EMAIL VERIFICATION' : 'SECURE VAULT SYSTEM'}
-          </span>
+          <span className="login-subtitle">SECURE VAULT SYSTEM</span>
         </div>
 
-        {!emailOtpStep ? (
-          <>
-            <div className="form-group">
+        <>
+          <div className="form-group">
               <label className="form-label">USERNAME</label>
               <div className="input-wrapper">
                 <input className="input" type="text" placeholder="enter username..."
@@ -174,42 +140,7 @@ export default function Login({ onLogin, onAdminLogin, onBack, theme, onToggleTh
               VAULT ENCRYPTED · AES-256-GCM · PBKDF2
             </div>
           </>
-        ) : (
-          <>
-            <div style={{ fontSize: 8, letterSpacing: 1.5, color: 'var(--text-dim)', marginBottom: 20, lineHeight: 2 }}>
-              A 6-DIGIT CODE HAS BEEN SENT TO YOUR EMAIL ADDRESS.
-              ENTER IT BELOW TO COMPLETE LOGIN.
-            </div>
 
-            <div className="form-group">
-              <label className="form-label">EMAIL VERIFICATION CODE</label>
-              <div className="input-wrapper">
-                <input className="input" type="text" placeholder="000000" maxLength={6}
-                  style={{ letterSpacing: 6, textAlign: 'center' }}
-                  value={emailOtp} onChange={e => setEmailOtp(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleEmailOtpVerify()}
-                  autoFocus />
-                <span className="input-icon">✉</span>
-              </div>
-            </div>
-
-            {error && (
-              <div style={{ fontSize: 8, letterSpacing: 1.5, color: 'var(--danger)', marginBottom: 12 }}>
-                ⚠ {error}
-              </div>
-            )}
-
-            <button className="btn btn-primary login-btn"
-              onClick={handleEmailOtpVerify} disabled={working || unlocking}>
-              {working ? 'VERIFYING...' : '▶ VERIFY CODE'}
-            </button>
-
-            <div className="login-status">
-              <span className="status-dot" />
-              CODE EXPIRES IN 10 MINUTES
-            </div>
-          </>
-        )}
       </div>
 
       {unlocking && (
