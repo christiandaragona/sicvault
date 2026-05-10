@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { deriveKey, decryptVault, loadVaultFromStorage, loadUsername } from '../lib/crypto'
+import { deriveKey, decryptVault, loadVaultFromStorage } from '../lib/crypto'
 import { verifyTOTP } from '../lib/totp'
 
-export default function Login({ onLogin, theme, onToggleTheme }) {
+export default function Login({ onLogin, onBack, theme, onToggleTheme }) {
   const [username, setUsername]   = useState('')
   const [pw, setPw]               = useState('')
   const [token, setToken]         = useState('')
@@ -13,14 +13,12 @@ export default function Login({ onLogin, theme, onToggleTheme }) {
 
   async function handleAuth() {
     setError('')
-    const storedUser = loadUsername()
-    if (storedUser && username.trim().toLowerCase() !== storedUser.toLowerCase())
-      return setError('INCORRECT USERNAME')
+    if (!username.trim()) return setError('ENTER YOUR USERNAME')
     if (!pw) return setError('ENTER YOUR MASTER PASSWORD')
     setWorking(true)
     try {
-      const stored = loadVaultFromStorage()
-      if (!stored) throw new Error('NO VAULT FOUND')
+      const stored = loadVaultFromStorage(username.trim())
+      if (!stored) throw new Error('NO ACCOUNT FOUND FOR THIS USERNAME')
 
       const key  = await deriveKey(pw, stored.salt)
       let vault
@@ -42,7 +40,7 @@ export default function Login({ onLogin, theme, onToggleTheme }) {
 
       setWorking(false)
       setUnlocking(true)
-      setTimeout(() => onLogin(key, vault), 1700)
+      setTimeout(() => onLogin(key, vault, username.trim()), 1700)
     } catch (e) {
       setError(e.message)
       setWorking(false)
@@ -108,9 +106,13 @@ export default function Login({ onLogin, theme, onToggleTheme }) {
           </div>
         )}
 
-        <button className="btn btn-primary login-btn" onClick={handleAuth} disabled={working || unlocking}>
-          {working ? 'DECRYPTING...' : '▶ AUTHENTICATE'}
-        </button>
+        <div style={{ display: 'flex', gap: 8, marginTop: 24 }}>
+          <button className="btn btn-sm" onClick={onBack}>← BACK</button>
+          <button className="btn btn-primary login-btn" style={{ flex: 1, marginTop: 0 }}
+            onClick={handleAuth} disabled={working || unlocking}>
+            {working ? 'DECRYPTING...' : '▶ AUTHENTICATE'}
+          </button>
+        </div>
 
         <div className="login-status">
           <span className="status-dot" />

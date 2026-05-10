@@ -1,22 +1,23 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import './App.css'
+import Gateway from './components/Gateway'
 import Login from './components/Login'
 import Setup from './components/Setup'
 import Sidebar from './components/Sidebar'
 import Vault from './components/Vault'
 import Generator from './components/Generator'
-import { vaultExists, encryptVault, saveVaultToStorage, loadVaultFromStorage } from './lib/crypto'
+import { encryptVault, saveVaultToStorage, loadVaultFromStorage } from './lib/crypto'
 
-const LOCK_AFTER_MS = 5 * 60 * 1000 // 5 minutes idle
+const LOCK_AFTER_MS = 5 * 60 * 1000
 
 export default function App() {
-  const [theme, setTheme] = useState('night')
-  const [screen, setScreen] = useState(() => vaultExists() ? 'login' : 'setup')
-  const [view, setView]   = useState('vault')
+  const [theme, setTheme]   = useState('night')
+  const [screen, setScreen] = useState('gateway')
+  const [view, setView]     = useState('vault')
 
-  // in-memory only — never persisted
-  const [vaultKey, setVaultKey] = useState(null)
-  const [vault, setVault]       = useState(null)
+  const [vaultKey, setVaultKey]   = useState(null)
+  const [vault, setVault]         = useState(null)
+  const [username, setUsername]   = useState('')
 
   const lockTimer = useRef(null)
 
@@ -27,11 +28,11 @@ export default function App() {
   const lock = useCallback(() => {
     setVaultKey(null)
     setVault(null)
-    setScreen('login')
+    setUsername('')
+    setScreen('gateway')
     clearTimeout(lockTimer.current)
   }, [])
 
-  // Reset idle timer on any user activity
   useEffect(() => {
     if (screen !== 'app') return
     function resetTimer() {
@@ -54,17 +55,18 @@ export default function App() {
     setTheme(t => t === 'night' ? 'day' : 'night')
   }
 
-  function handleAuthSuccess(key, loadedVault) {
+  function handleAuthSuccess(key, loadedVault, user) {
     setVaultKey(key)
     setVault(loadedVault)
+    setUsername(user)
     setScreen('app')
   }
 
   async function persistVault(updatedVault) {
-    const stored = loadVaultFromStorage()
+    const stored = loadVaultFromStorage(username)
     if (!stored || !vaultKey) return
     const { iv, ciphertext } = await encryptVault(vaultKey, updatedVault)
-    saveVaultToStorage(stored.salt, iv, ciphertext)
+    saveVaultToStorage(username, stored.salt, iv, ciphertext)
   }
 
   async function handleAddEntry(entry) {
@@ -79,17 +81,42 @@ export default function App() {
     await persistVault(updated)
   }
 
+  if (screen === 'gateway') {
+    return (
+      <Gateway
+        onLogin={() => setScreen('login')}
+        onCreate={() => setScreen('setup')}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+      />
+    )
+  }
+
   if (screen === 'setup') {
-    return <Setup onComplete={handleAuthSuccess} theme={theme} onToggleTheme={toggleTheme} />
+    return (
+      <Setup
+        onComplete={handleAuthSuccess}
+        onBack={() => setScreen('gateway')}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+      />
+    )
   }
 
   if (screen === 'login') {
-    return <Login onLogin={handleAuthSuccess} theme={theme} onToggleTheme={toggleTheme} />
+    return (
+      <Login
+        onLogin={handleAuthSuccess}
+        onBack={() => setScreen('gateway')}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+      />
+    )
   }
 
   return (
     <div className="app">
-      <Sidebar view={view} setView={setView} onLock={lock} />
+      <Sidebar view={view} setView={setView} onLock={lock} username={username} />
 
       <div className="main-content">
         <div className="topbar">
@@ -99,7 +126,7 @@ export default function App() {
           <div className="topbar-right">
             <div className="twofa-badge">
               <span className="twofa-dot" />
-              SESSION ACTIVE
+              {username.toUpperCase()} · SESSION ACTIVE
             </div>
             <button className="theme-toggle" onClick={toggleTheme}>
               <span className="theme-icon">{theme === 'night' ? '☀' : '🌙'}</span>

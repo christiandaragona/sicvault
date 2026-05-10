@@ -48,16 +48,20 @@ function fromB64(str) {
   return new Uint8Array(atob(str).split('').map(c => c.charCodeAt(0)))
 }
 
-export function saveVaultToStorage(salt, iv, ciphertext) {
-  localStorage.setItem('sicvault_v1', JSON.stringify({
+function vaultKey(username) {
+  return `sicvault_v1_${username.trim().toLowerCase()}`
+}
+
+export function saveVaultToStorage(username, salt, iv, ciphertext) {
+  localStorage.setItem(vaultKey(username), JSON.stringify({
     s: toB64(salt),
     i: toB64(iv),
     c: toB64(ciphertext),
   }))
 }
 
-export function loadVaultFromStorage() {
-  const raw = localStorage.getItem('sicvault_v1')
+export function loadVaultFromStorage(username) {
+  const raw = localStorage.getItem(vaultKey(username))
   if (!raw) return null
   try {
     const { s, i, c } = JSON.parse(raw)
@@ -67,19 +71,10 @@ export function loadVaultFromStorage() {
   }
 }
 
-export function vaultExists() {
-  return !!localStorage.getItem('sicvault_v1')
+export function vaultExistsForUser(username) {
+  return !!localStorage.getItem(vaultKey(username))
 }
 
-export function saveUsername(username) {
-  localStorage.setItem('sicvault_username', username)
-}
-
-export function loadUsername() {
-  return localStorage.getItem('sicvault_username') || ''
-}
-
-export function nukeVault() {
-  localStorage.removeItem('sicvault_v1')
-  localStorage.removeItem('sicvault_username')
+export function nukeVault(username) {
+  localStorage.removeItem(vaultKey(username))
 }

@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { generateSalt, deriveKey, encryptVault, saveVaultToStorage, saveUsername } from '../lib/crypto'
+import { generateSalt, deriveKey, encryptVault, saveVaultToStorage, vaultExistsForUser } from '../lib/crypto'
 import { generateTOTPSecret, verifyTOTP, getTOTPUri } from '../lib/totp'
 
-export default function Setup({ onComplete, theme, onToggleTheme }) {
+export default function Setup({ onComplete, onBack, theme, onToggleTheme }) {
   const [step, setStep]         = useState('password') // 'password' | 'totp' | 'working'
   const [username, setUsername] = useState('')
   const [pw, setPw]             = useState('')
@@ -17,6 +17,7 @@ export default function Setup({ onComplete, theme, onToggleTheme }) {
   async function handlePasswordNext() {
     setError('')
     if (username.trim().length < 2) return setError('USERNAME MUST BE AT LEAST 2 CHARACTERS')
+    if (vaultExistsForUser(username)) return setError('USERNAME ALREADY TAKEN')
     if (pw.length < 8) return setError('MASTER PASSWORD MUST BE AT LEAST 8 CHARACTERS')
     if (pw !== confirm) return setError('PASSWORDS DO NOT MATCH')
     if (enable2fa) { setStep('totp'); return }
@@ -40,9 +41,8 @@ export default function Setup({ onComplete, theme, onToggleTheme }) {
         settings: { totpEnabled: !!secret, totpSecret: secret ?? '' },
       }
       const { iv, ciphertext } = await encryptVault(key, initialVault)
-      saveVaultToStorage(salt, iv, ciphertext)
-      saveUsername(username.trim())
-      onComplete(key, initialVault)
+      saveVaultToStorage(username.trim(), salt, iv, ciphertext)
+      onComplete(key, initialVault, username.trim())
     } catch (e) {
       setError('SETUP FAILED — ' + e.message)
       setWorking(false)
@@ -123,9 +123,13 @@ export default function Setup({ onComplete, theme, onToggleTheme }) {
               </div>
             )}
 
-            <button className="btn btn-primary login-btn" onClick={handlePasswordNext} disabled={working}>
-              {enable2fa ? '▶ NEXT: SETUP 2FA' : '▶ CREATE VAULT'}
-            </button>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="btn btn-sm" onClick={onBack}>← BACK</button>
+              <button className="btn btn-primary login-btn" style={{ flex: 1, marginTop: 0 }}
+                onClick={handlePasswordNext} disabled={working}>
+                {enable2fa ? '▶ NEXT: SETUP 2FA' : '▶ CREATE VAULT'}
+              </button>
+            </div>
 
             <div className="login-status">
               <span className="status-dot" />
