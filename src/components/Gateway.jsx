@@ -1,4 +1,4 @@
-export default function Gateway({ onLogin, onCreate, theme, onToggleTheme }) {
+export default function Gateway({ onLogin, onCreate, onForgotPassword, theme, onToggleTheme }) {
   return (
     <div className="login-screen">
       <button className="theme-toggle" onClick={onToggleTheme}
@@ -28,7 +28,14 @@ export default function Gateway({ onLogin, onCreate, theme, onToggleTheme }) {
           </button>
         </div>
 
-        <div className="login-status" style={{ marginTop: 24 }}>
+        <button
+          onClick={onForgotPassword}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', marginTop: 12,
+            fontSize: 8, letterSpacing: 2, color: 'var(--text-dim)', fontFamily: 'inherit' }}>
+          FORGOT PASSWORD?
+        </button>
+
+        <div className="login-status" style={{ marginTop: 16 }}>
           <span className="status-dot" />
           COMPATIBLE WITH GOOGLE AUTHENTICATOR · AUTHY · ANY TOTP APP
         </div>

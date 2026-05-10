@@ -3,23 +3,48 @@ import './App.css'
 import Gateway from './components/Gateway'
 import Login from './components/Login'
 import Setup from './components/Setup'
+import ForgotPassword from './components/ForgotPassword'
+import ResetPassword from './components/ResetPassword'
+import Admin from './components/Admin'
 import Sidebar from './components/Sidebar'
 import Vault from './components/Vault'
 import Generator from './components/Generator'
 import { encryptVault, saveVaultToStorage, loadVaultFromStorage } from './lib/crypto'
+import { verifyResetToken } from './lib/api'
 
 const LOCK_AFTER_MS = 5 * 60 * 1000
 
 export default function App() {
-  const [theme, setTheme]   = useState('night')
-  const [screen, setScreen] = useState('gateway')
-  const [view, setView]     = useState('vault')
+  const [theme, setTheme]     = useState('night')
+  const [screen, setScreen]   = useState('gateway')
+  const [view, setView]       = useState('vault')
 
-  const [vaultKey, setVaultKey]   = useState(null)
-  const [vault, setVault]         = useState(null)
-  const [username, setUsername]   = useState('')
+  const [vaultKey, setVaultKey] = useState(null)
+  const [vault, setVault]       = useState(null)
+  const [username, setUsername] = useState('')
+  const [adminToken, setAdminToken] = useState(null)
+
+  // Password reset state (populated from URL ?reset= param)
+  const [resetToken, setResetToken]     = useState(null)
+  const [resetUsername, setResetUsername] = useState('')
 
   const lockTimer = useRef(null)
+
+  // Check for ?reset=token in URL on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const token = params.get('reset')
+    if (!token) return
+    // Clear the URL
+    window.history.replaceState({}, '', window.location.pathname)
+    verifyResetToken(token).then(r => {
+      if (r.ok) {
+        setResetToken(token)
+        setResetUsername(r.username)
+        setScreen('reset')
+      }
+    })
+  }, [])
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
@@ -29,6 +54,7 @@ export default function App() {
     setVaultKey(null)
     setVault(null)
     setUsername('')
+    setAdminToken(null)
     setScreen('gateway')
     clearTimeout(lockTimer.current)
   }, [])
@@ -51,15 +77,18 @@ export default function App() {
     }
   }, [screen, lock])
 
-  function toggleTheme() {
-    setTheme(t => t === 'night' ? 'day' : 'night')
-  }
+  function toggleTheme() { setTheme(t => t === 'night' ? 'day' : 'night') }
 
   function handleAuthSuccess(key, loadedVault, user) {
     setVaultKey(key)
     setVault(loadedVault)
     setUsername(user)
     setScreen('app')
+  }
+
+  function handleAdminLogin(token) {
+    setAdminToken(token)
+    setScreen('admin')
   }
 
   async function persistVault(updatedVault) {
@@ -81,11 +110,45 @@ export default function App() {
     await persistVault(updated)
   }
 
+  if (screen === 'reset') {
+    return (
+      <ResetPassword
+        token={resetToken}
+        username={resetUsername}
+        onComplete={handleAuthSuccess}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+      />
+    )
+  }
+
+  if (screen === 'admin') {
+    return (
+      <Admin
+        token={adminToken}
+        onLogout={lock}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+      />
+    )
+  }
+
   if (screen === 'gateway') {
     return (
       <Gateway
         onLogin={() => setScreen('login')}
         onCreate={() => setScreen('setup')}
+        onForgotPassword={() => setScreen('forgot')}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+      />
+    )
+  }
+
+  if (screen === 'forgot') {
+    return (
+      <ForgotPassword
+        onBack={() => setScreen('gateway')}
         theme={theme}
         onToggleTheme={toggleTheme}
       />
@@ -107,6 +170,7 @@ export default function App() {
     return (
       <Login
         onLogin={handleAuthSuccess}
+        onAdminLogin={handleAdminLogin}
         onBack={() => setScreen('gateway')}
         theme={theme}
         onToggleTheme={toggleTheme}

@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { deriveKey, decryptVault, loadVaultFromStorage } from '../lib/crypto'
 import { verifyTOTP } from '../lib/totp'
+import { checkAccount, sendEmailOtp, verifyEmailOtp, adminLogin } from '../lib/api'
 
-export default function Login({ onLogin, onBack, theme, onToggleTheme }) {
+export default function Login({ onLogin, onAdminLogin, onBack, theme, onToggleTheme }) {
   const [username, setUsername]   = useState('')
   const [pw, setPw]               = useState('')
   const [token, setToken]         = useState('')
@@ -11,16 +12,38 @@ export default function Login({ onLogin, onBack, theme, onToggleTheme }) {
   const [working, setWorking]     = useState(false)
   const [unlocking, setUnlocking] = useState(false)
 
+  // Email OTP second step
+  const [emailOtpStep, setEmailOtpStep] = useState(false)
+  const [emailOtp, setEmailOtp]         = useState('')
+  const [pendingKey, setPendingKey]     = useState(null)
+  const [pendingVault, setPendingVault] = useState(null)
+
   async function handleAuth() {
     setError('')
     if (!username.trim()) return setError('ENTER YOUR USERNAME')
-    if (!pw) return setError('ENTER YOUR MASTER PASSWORD')
+    if (!pw)              return setError('ENTER YOUR MASTER PASSWORD')
     setWorking(true)
-    try {
-      const stored = loadVaultFromStorage(username.trim())
-      if (!stored) throw new Error('NO ACCOUNT FOUND FOR THIS USERNAME')
 
-      const key  = await deriveKey(pw, stored.salt)
+    try {
+      // Check account exists + get flags
+      const acct = await checkAccount(username.trim())
+
+      if (acct.error === 'NO ACCOUNT FOUND FOR THIS USERNAME') {
+        // Could be admin — try admin auth
+        const adminResult = await adminLogin(username.trim(), pw)
+        if (adminResult.token) {
+          onAdminLogin(adminResult.token)
+          return
+        }
+        throw new Error('NO ACCOUNT FOUND FOR THIS USERNAME')
+      }
+      if (acct.error) throw new Error(acct.error)
+
+      // Decrypt vault to verify password
+      const stored = loadVaultFromStorage(username.trim())
+      if (!stored) throw new Error('NO LOCAL VAULT — TRY ANOTHER DEVICE OR RESET PASSWORD')
+
+      const key = await deriveKey(pw, stored.salt)
       let vault
       try {
         vault = await decryptVault(key, stored.iv, stored.ciphertext)
@@ -28,19 +51,48 @@ export default function Login({ onLogin, onBack, theme, onToggleTheme }) {
         throw new Error('INCORRECT PASSWORD')
       }
 
+      // TOTP verification
       if (vault.settings?.totpEnabled) {
         if (!token || token.length < 6) {
-          setError('ENTER YOUR 6-DIGIT 2FA CODE')
+          setError('ENTER YOUR 6-DIGIT TOTP CODE')
           setWorking(false)
           return
         }
         const ok = await verifyTOTP(vault.settings.totpSecret, token)
-        if (!ok) throw new Error('INVALID 2FA CODE')
+        if (!ok) throw new Error('INVALID TOTP CODE')
       }
 
+      // Email 2FA — pause here and send OTP
+      if (acct.emailTwoFa) {
+        setPendingKey(key)
+        setPendingVault(vault)
+        const r = await sendEmailOtp(username.trim())
+        if (r.error) throw new Error(r.error)
+        setEmailOtpStep(true)
+        setWorking(false)
+        return
+      }
+
+      // All checks passed
       setWorking(false)
       setUnlocking(true)
       setTimeout(() => onLogin(key, vault, username.trim()), 1700)
+    } catch (e) {
+      setError(e.message)
+      setWorking(false)
+    }
+  }
+
+  async function handleEmailOtpVerify() {
+    setError('')
+    if (!emailOtp || emailOtp.length < 6) return setError('ENTER YOUR 6-DIGIT EMAIL CODE')
+    setWorking(true)
+    try {
+      const r = await verifyEmailOtp(username.trim(), emailOtp)
+      if (r.error) throw new Error(r.error)
+      setWorking(false)
+      setUnlocking(true)
+      setTimeout(() => onLogin(pendingKey, pendingVault, username.trim()), 1700)
     } catch (e) {
       setError(e.message)
       setWorking(false)
@@ -60,64 +112,104 @@ export default function Login({ onLogin, onBack, theme, onToggleTheme }) {
           <span className="login-title">SICVAULT</span>
           <span style={{ display: 'block', fontSize: 9, letterSpacing: 5, color: 'var(--text-dim)', marginTop: 4 }}>v1.0</span>
           <div className="login-divider" />
-          <span className="login-subtitle">SECURE VAULT SYSTEM</span>
+          <span className="login-subtitle">
+            {emailOtpStep ? 'EMAIL VERIFICATION' : 'SECURE VAULT SYSTEM'}
+          </span>
         </div>
 
-        <div className="form-group">
-          <label className="form-label">USERNAME</label>
-          <div className="input-wrapper">
-            <input className="input" type="text"
-              placeholder="enter username..."
-              autoComplete="username"
-              value={username} onChange={e => setUsername(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleAuth()} />
-          </div>
-        </div>
+        {!emailOtpStep ? (
+          <>
+            <div className="form-group">
+              <label className="form-label">USERNAME</label>
+              <div className="input-wrapper">
+                <input className="input" type="text" placeholder="enter username..."
+                  autoComplete="username"
+                  value={username} onChange={e => setUsername(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleAuth()} />
+              </div>
+            </div>
 
-        <div className="form-group">
-          <label className="form-label">MASTER PASSWORD</label>
-          <div className="input-wrapper">
-            <input className="input" type={showPw ? 'text' : 'password'}
-              placeholder="enter master password..."
-              autoComplete="current-password"
-              value={pw} onChange={e => setPw(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleAuth()} />
-            <span className="input-icon" style={{ cursor: 'pointer', pointerEvents: 'all' }}
-              onClick={() => setShowPw(v => !v)}>
-              {showPw ? '🙈' : '👁'}
-            </span>
-          </div>
-        </div>
+            <div className="form-group">
+              <label className="form-label">MASTER PASSWORD</label>
+              <div className="input-wrapper">
+                <input className="input" type={showPw ? 'text' : 'password'}
+                  placeholder="enter master password..."
+                  autoComplete="current-password"
+                  value={pw} onChange={e => setPw(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleAuth()} />
+                <span className="input-icon" style={{ cursor: 'pointer', pointerEvents: 'all' }}
+                  onClick={() => setShowPw(v => !v)}>
+                  {showPw ? '🙈' : '👁'}
+                </span>
+              </div>
+            </div>
 
-        <div className="form-group">
-          <label className="form-label">2FA CODE <span style={{ color: 'var(--text-dim)', fontWeight: 'normal' }}>(IF ENABLED)</span></label>
-          <div className="input-wrapper">
-            <input className="input" type="text" placeholder="000000" maxLength={6}
-              style={{ letterSpacing: 6, textAlign: 'center' }}
-              value={token} onChange={e => setToken(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleAuth()} />
-            <span className="input-icon">🔐</span>
-          </div>
-        </div>
+            <div className="form-group">
+              <label className="form-label">TOTP CODE <span style={{ color: 'var(--text-dim)', fontWeight: 'normal' }}>(IF ENABLED)</span></label>
+              <div className="input-wrapper">
+                <input className="input" type="text" placeholder="000000" maxLength={6}
+                  style={{ letterSpacing: 6, textAlign: 'center' }}
+                  value={token} onChange={e => setToken(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleAuth()} />
+                <span className="input-icon">🔐</span>
+              </div>
+            </div>
 
-        {error && (
-          <div style={{ fontSize: 8, letterSpacing: 1.5, color: 'var(--danger)', marginBottom: 12 }}>
-            ⚠ {error}
-          </div>
+            {error && (
+              <div style={{ fontSize: 8, letterSpacing: 1.5, color: 'var(--danger)', marginBottom: 12 }}>
+                ⚠ {error}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: 8, marginTop: 24 }}>
+              <button className="btn btn-sm" onClick={onBack}>← BACK</button>
+              <button className="btn btn-primary login-btn" style={{ flex: 1, marginTop: 0 }}
+                onClick={handleAuth} disabled={working || unlocking}>
+                {working ? 'AUTHENTICATING...' : '▶ AUTHENTICATE'}
+              </button>
+            </div>
+
+            <div className="login-status">
+              <span className="status-dot" />
+              VAULT ENCRYPTED · AES-256-GCM · PBKDF2
+            </div>
+          </>
+        ) : (
+          <>
+            <div style={{ fontSize: 8, letterSpacing: 1.5, color: 'var(--text-dim)', marginBottom: 20, lineHeight: 2 }}>
+              A 6-DIGIT CODE HAS BEEN SENT TO YOUR EMAIL ADDRESS.
+              ENTER IT BELOW TO COMPLETE LOGIN.
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">EMAIL VERIFICATION CODE</label>
+              <div className="input-wrapper">
+                <input className="input" type="text" placeholder="000000" maxLength={6}
+                  style={{ letterSpacing: 6, textAlign: 'center' }}
+                  value={emailOtp} onChange={e => setEmailOtp(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleEmailOtpVerify()}
+                  autoFocus />
+                <span className="input-icon">✉</span>
+              </div>
+            </div>
+
+            {error && (
+              <div style={{ fontSize: 8, letterSpacing: 1.5, color: 'var(--danger)', marginBottom: 12 }}>
+                ⚠ {error}
+              </div>
+            )}
+
+            <button className="btn btn-primary login-btn"
+              onClick={handleEmailOtpVerify} disabled={working || unlocking}>
+              {working ? 'VERIFYING...' : '▶ VERIFY CODE'}
+            </button>
+
+            <div className="login-status">
+              <span className="status-dot" />
+              CODE EXPIRES IN 10 MINUTES
+            </div>
+          </>
         )}
-
-        <div style={{ display: 'flex', gap: 8, marginTop: 24 }}>
-          <button className="btn btn-sm" onClick={onBack}>← BACK</button>
-          <button className="btn btn-primary login-btn" style={{ flex: 1, marginTop: 0 }}
-            onClick={handleAuth} disabled={working || unlocking}>
-            {working ? 'DECRYPTING...' : '▶ AUTHENTICATE'}
-          </button>
-        </div>
-
-        <div className="login-status">
-          <span className="status-dot" />
-          VAULT ENCRYPTED · AES-256-GCM · PBKDF2
-        </div>
       </div>
 
       {unlocking && (
